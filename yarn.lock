@@ -3377,6 +3377,13 @@ expo-blur@~14.0.3:
   resolved "https://registry.yarnpkg.com/expo-blur/-/expo-blur-14.0.3.tgz#656d6b2442bfbbfb2a6608c6bc1151b29bce6698"
   integrity sha512-BL3xnqBJbYm3Hg9t/HjNjdeY7N/q8eK5tsLYxswWG1yElISWZmMvrXYekl7XaVCPfyFyz8vQeaxd7q74ZY3Wrw==
 
+expo-camera@~16.0.16:
+  version "16.0.16"
+  resolved "https://registry.yarnpkg.com/expo-camera/-/expo-camera-16.0.16.tgz#9d2b2a30b92dfd1acfc55deb0b32f715c5c09c9c"
+  integrity sha512-igGPVHVEkvJBqzfz7tPFHC3DNnjltXguxH3X+35G22v3yYpYmwEWG4aVDOPasUl9my6Z/DdjGZsdCodX+hXQTw==
+  dependencies:
+    invariant "^2.2.4"
+
 expo-constants@~17.0.5, expo-constants@~17.0.6:
   version "17.0.6"
   resolved "https://registry.yarnpkg.com/expo-constants/-/expo-constants-17.0.6.tgz#0211e34d497bbfc0cdf6002d00a05173d1e6455c"
@@ -3403,6 +3410,11 @@ expo-haptics@~14.0.1:
   version "14.0.1"
   resolved "https://registry.yarnpkg.com/expo-haptics/-/expo-haptics-14.0.1.tgz#ff4ead605e33f1917e615c9328af7ac1c34892dc"
   integrity sha512-V81FZ7xRUfqM6uSI6FA1KnZ+QpEKnISqafob/xEfcx1ymwhm4V3snuLWWFjmAz+XaZQTqlYa8z3QbqEXz7G63w==
+
+expo-image@~2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/expo-image/-/expo-image-2.0.5.tgz#68aa00a56b09af01a728f5afc55b1877d02e6ce0"
+  integrity sha512-FAq7uyaTAfLWER3lN+KVAtep7IfGPZN9ygnVKW4GvgnvR4hKhTtZ5WNxiJ18KKLVb4nUKuHOpQeJNnljy3dtmA==
 
 expo-keep-awake@~14.0.2:
   version "14.0.2"
