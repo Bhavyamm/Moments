@@ -6,11 +6,11 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        roboto: ["roboto-Regular", "sans-serif"],
-        "roboto-bold": ["Roboto-Bold", "sans-serif"],
-        "roboto-extrabold": ["Roboto-ExtraBold", "sans-serif"],
-        "roboto-medium": ["Roboto-Medium", "sans-serif"],
-        "roboto-light": ["Roboto-Light", "sans-serif"],
+        montserrat: ["Montserrat-Regular", "sans-serif"],
+        "montserrat-bold": ["Montserrat-Bold", "sans-serif"],
+        "montserrat-extrabold": ["Montserrat-ExtraBold", "sans-serif"],
+        "montserrat-medium": ["Montserrat-Medium", "sans-serif"],
+        "montserrat-light": ["Montserrat-Light", "sans-serif"],
       },
       colors: {
         primary: {

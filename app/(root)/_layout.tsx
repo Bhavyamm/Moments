@@ -1,10 +1,13 @@
-import { Redirect, Slot } from "expo-router";
+// File: app/(root)/_layout.tsx
+import { useSegments, Redirect, Slot } from "expo-router";
 import { Header } from "@/components/Header";
 
 export default function AppLayout() {
-  let isLogged = true;
+  const segments = useSegments();
+  let isLogged = false;
 
-  if (!isLogged) {
+  // Allow unauthenticated for sign-in route:
+  if (!isLogged && !segments.includes("sign-in")) {
     return <Redirect href="/welcome" />;
   }
 
