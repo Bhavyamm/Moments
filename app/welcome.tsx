@@ -1,13 +1,22 @@
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Redirect } from "expo-router";
 import images from "@/constants/images";
+import { useGlobalContext } from "@/lib/global-provider";
+import { login } from "@/lib/appwrite";
 
 export default function Welcome() {
-  const router = useRouter();
+  const { refetch, loading, isLogged } = useGlobalContext();
 
-  const handleStart = () => {
-    router.push("/sign-in");
+  if (!loading && isLogged) return <Redirect href="/" />;
+
+  const handleLogin = async () => {
+    const result = await login();
+    if (result) {
+      refetch({});
+    } else {
+      Alert.alert("Error", "Failed to login");
+    }
   };
 
   return (
@@ -28,13 +37,19 @@ export default function Welcome() {
           <Text>with your friends</Text>
         </Text>
 
+        <Text className="text-lg font-montserrat text-primary-100 text-center mt-12">
+          Login to Memories with Google
+        </Text>
+
         <TouchableOpacity
-          onPress={handleStart}
-          className="bg-yellow-100 rounded-full w-full py-4 mt-14 border-primary-100 border-2"
+          onPress={handleLogin}
+          className="bg-white shadow-md shadow-zinc-300 rounded-full w-full py-4 mt-5"
         >
-          <Text className="text-center font-montserrat-medium text-primary-100 font-bold text-xl">
-            Start
-          </Text>
+          <View className="flex flex-row items-center justify-center">
+            <Text className="text-lg font-rubik-medium text-black-300 ml-2">
+              Continue with Google
+            </Text>
+          </View>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
