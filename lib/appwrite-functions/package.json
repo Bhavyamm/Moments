@@ -1,6 +1,7 @@
 {
   "name": "appwrite-functions",
   "version": "1.0.0",
+  "type": "module",
   "main": "update-users-table.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
