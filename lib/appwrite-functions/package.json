@@ -1,0 +1,14 @@
+{
+  "name": "appwrite-functions",
+  "version": "1.0.0",
+  "main": "update-users-table.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "node-appwrite": "^15.0.0"
+  }
+}
