@@ -36,9 +36,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Moments to access your camera",
-          "microphonePermission": "Allow Moments to access your microphone",
+          "cameraPermission": "Allow Memories to access your camera",
+          "microphonePermission": "Allow Memories to access your microphone",
           "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Memories to access your contacts."
         }
       ]
     ],
