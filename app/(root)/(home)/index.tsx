@@ -4,10 +4,12 @@ import {
   CameraView,
   useCameraPermissions,
 } from "expo-camera";
-import { useRef, useState } from "react";
-import { Button, Text, View, StyleSheet } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Button, Text, View, StyleSheet, Modal } from "react-native";
 import { Image } from "expo-image";
 import ShutterControls from "@/components/ShutterControls";
+import * as Linking from "expo-linking";
+import { AddFriendModal } from "@/components/AddFriendModal";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -16,6 +18,40 @@ export default function Home() {
   const [mode, setMode] = useState<CameraMode>("picture");
   const [facing, setFacing] = useState<CameraType>("back");
   const [recording, setRecording] = useState(false);
+
+  const [friendId, setFriendId] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
+  const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    const handleDeepLink = async () => {
+      const initialUrl = await Linking.getInitialURL();
+      console.log(initialUrl, "initialUrl");
+      if (initialUrl) {
+        const { queryParams } = Linking.parse(initialUrl);
+        if (queryParams?.friendId && queryParams?.userId) {
+          setFriendId(queryParams?.friendId as string);
+          setUserId(queryParams?.userId as string);
+          setModalVisible(true);
+        }
+      }
+    };
+
+    handleDeepLink();
+  }, []);
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      const { queryParams } = Linking.parse(url);
+      if (queryParams?.friendId && queryParams?.userId) {
+        setFriendId(queryParams?.friendId as string);
+        setUserId(queryParams?.userId as string);
+        setModalVisible(true);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   if (!permission) return null;
 
@@ -71,7 +107,7 @@ export default function Home() {
         />
         {uri && (
           <View style={styles.capturedImageOverlay}>
-            <Image source={{ uri: uri! }} style={styles.capturedImage} />
+            <Image source={{ uri: uri }} style={styles.capturedImage} />
           </View>
         )}
       </View>
@@ -80,6 +116,13 @@ export default function Home() {
         onToggleMode={toggleMode}
         onCapture={mode === "picture" ? takePicture : recordVideo}
         onToggleFacing={toggleFacing}
+      />
+
+      <AddFriendModal
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        friendId={friendId}
+        userId={userId}
       />
     </View>
   );

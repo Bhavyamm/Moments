@@ -1,4 +1,9 @@
-import { logout } from "@/lib/appwrite";
+import {
+  createFriendRequest,
+  getUserByPhoneNumber,
+  logout,
+  checkFriendshipStatus,
+} from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
 import {
   Alert,
@@ -10,26 +15,62 @@ import {
   View,
 } from "react-native";
 import * as Contacts from "expo-contacts";
+import * as SMS from "expo-sms";
+import * as Linking from "expo-linking";
 import { useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
+
+interface ContactWithStatus extends Contacts.Contact {
+  friendshipStatus?: "none" | "pending" | "accepted";
+}
 
 export default function Profile() {
   const { user, refetch } = useGlobalContext();
-  const [contacts, setContacts] = useState<Contacts.Contact[]>([]);
+  const [contacts, setContacts] = useState<ContactWithStatus[]>([]);
+
+  const loadContacts = async () => {
+    const { status } = await Contacts.requestPermissionsAsync();
+    if (status === "granted") {
+      const { data } = await Contacts.getContactsAsync({
+        fields: [
+          Contacts.Fields.Name,
+          Contacts.Fields.Image,
+          Contacts.Fields.PhoneNumbers,
+        ],
+      });
+
+      if (data.length > 0) {
+        const contactsWithStatus = await Promise.all(
+          data.map(async (contact) => {
+            const phoneNumber = contact?.phoneNumbers?.[0]?.number;
+            if (phoneNumber) {
+              try {
+                const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
+                if (friend.success && friend.user) {
+                  const friendshipStatus = await checkFriendshipStatus(
+                    user?.$id!,
+                    friend.user.$id
+                  );
+                  return {
+                    ...contact,
+                    friendshipStatus: friendshipStatus?.status,
+                  };
+                }
+              } catch (error) {
+                console.error("Error checking friendship status:", error);
+              }
+            }
+            return { ...contact, friendshipStatus: "none" };
+          })
+        );
+        setContacts(contactsWithStatus);
+        console.log(contactsWithStatus, "contacts with status");
+      }
+    }
+  };
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status === "granted") {
-        const { data } = await Contacts.getContactsAsync({
-          fields: [Contacts.Fields.Name, Contacts.Fields.Image],
-        });
-
-        if (data.length > 0) {
-          setContacts(data);
-          console.log(data, "contacts");
-        }
-      }
-    })();
+    loadContacts();
   }, []);
 
   const handleLogout = async () => {
@@ -42,7 +83,60 @@ export default function Profile() {
     }
   };
 
-  const renderContactItem = ({ item }: { item: Contacts.Contact }) => {
+  const handleAddContact = async (contact: ContactWithStatus) => {
+    const phoneNumber = contact?.phoneNumbers?.[0]?.number;
+    if (!phoneNumber) {
+      Alert.alert("Error", "No phone number available");
+      console.log("Adding contact: No phone number available");
+      return;
+    }
+
+    console.log("Adding contact:", phoneNumber);
+
+    const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
+
+    const deepLinkUrl = Linking.createURL("/", {
+      queryParams: { friendId: friend?.user?.$id, userId: user?.$id },
+    });
+
+    const isAvailable = await SMS.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert("SMS Not Available", "Your device does not support SMS");
+      return;
+    }
+
+    const message = `Hey, I'd like to add you as a friend on MyApp! Tap here to accept: ${deepLinkUrl}`;
+
+    const recipients = [phoneNumber];
+
+    try {
+      const { result } = await SMS.sendSMSAsync(recipients, message);
+      console.log("SMS result:", result);
+
+      if (friend.success && friend.user && result === "sent") {
+        const response = await createFriendRequest(
+          user?.$id!,
+          friend?.user?.$id
+        );
+
+        if (response) {
+          Alert.alert("Success", "Friend request sent successfully");
+          setContacts((prevContacts) =>
+            prevContacts.map((c) =>
+              c.id === contact.id ? { ...c, friendshipStatus: "pending" } : c
+            )
+          );
+        } else {
+          Alert.alert("Error", "Failed to send friend request");
+        }
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to send SMS");
+      console.error(error);
+    }
+  };
+
+  const renderContactItem = ({ item }: { item: ContactWithStatus }) => {
     const imageUri =
       item.imageAvailable && item.image && item.image.uri
         ? item.image.uri.startsWith("/")
@@ -71,6 +165,25 @@ export default function Profile() {
           </View>
         )}
         <Text style={styles.contactName}>{item.name}</Text>
+
+        {item.friendshipStatus === "pending" ? (
+          <View style={styles.pendingBtn}>
+            <Feather name="clock" size={16} color="#fff" />
+            <Text style={styles.pendingBtnText}>Pending</Text>
+          </View>
+        ) : item.friendshipStatus === "accepted" ? (
+          <View style={styles.acceptedBtn}>
+            <Feather name="check" size={16} color="#fff" />
+            <Text style={styles.acceptedBtnText}>Friends</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => handleAddContact(item)}
+          >
+            <Text style={styles.addBtnText}>+Add</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
@@ -151,6 +264,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+    width: "100%",
+    justifyContent: "space-between",
   },
   contactAvatar: {
     width: 40,
@@ -160,5 +275,42 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 16,
+    flex: 1,
+  },
+  addBtn: {
+    backgroundColor: "#007bff",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  addBtnText: {
+    color: "#fff",
+    fontSize: 14,
+  },
+  pendingBtn: {
+    backgroundColor: "#f0ad4e",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pendingBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 5,
+  },
+  acceptedBtn: {
+    backgroundColor: "#5cb85c",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  acceptedBtnText: {
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 5,
   },
 });
