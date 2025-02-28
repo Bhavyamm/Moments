@@ -10,6 +10,7 @@ import { Image } from "expo-image";
 import ShutterControls from "@/components/ShutterControls";
 import * as Linking from "expo-linking";
 import { AddFriendModal } from "@/components/AddFriendModal";
+import { checkFriendshipStatus } from "@/lib/appwrite";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -30,9 +31,19 @@ export default function Home() {
       if (initialUrl) {
         const { queryParams } = Linking.parse(initialUrl);
         if (queryParams?.friendId && queryParams?.userId) {
-          setFriendId(queryParams?.friendId as string);
-          setUserId(queryParams?.userId as string);
-          setModalVisible(true);
+          const newFriendId = queryParams.friendId as string;
+          const newUserId = queryParams.userId as string;
+
+          const { areFriends } = await checkFriendshipStatus(
+            newUserId,
+            newFriendId
+          );
+
+          setFriendId(newFriendId);
+          setUserId(newUserId);
+          if (!areFriends) {
+            setModalVisible(true);
+          }
         }
       }
     };
@@ -41,12 +52,22 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const subscription = Linking.addEventListener("url", ({ url }) => {
+    const subscription = Linking.addEventListener("url", async ({ url }) => {
       const { queryParams } = Linking.parse(url);
       if (queryParams?.friendId && queryParams?.userId) {
-        setFriendId(queryParams?.friendId as string);
-        setUserId(queryParams?.userId as string);
-        setModalVisible(true);
+        const newFriendId = queryParams.friendId as string;
+        const newUserId = queryParams.userId as string;
+
+        const { areFriends } = await checkFriendshipStatus(
+          newUserId,
+          newFriendId
+        );
+
+        setFriendId(newFriendId);
+        setUserId(newUserId);
+        if (!areFriends) {
+          setModalVisible(true);
+        }
       }
     });
 
