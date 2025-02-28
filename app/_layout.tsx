@@ -1,8 +1,13 @@
-import { SplashScreen, Stack } from "expo-router";
+import { useRouter, SplashScreen, Stack } from "expo-router";
 import "./global.css";
 import { useFonts } from "expo-font";
 import { useEffect } from "react";
 import GlobalProvider from "@/lib/global-provider";
+import {
+  GestureHandlerRootView,
+  PanGestureHandler,
+} from "react-native-gesture-handler";
+import { View } from "react-native";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -12,6 +17,8 @@ export default function RootLayout() {
     "Montserrat-Medium": require("../assets/fonts/Montserrat-Medium.ttf"),
     "Montserrat-Regular": require("../assets/fonts/Montserrat-Regular.ttf"),
   });
+
+  const router = useRouter();
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -23,9 +30,21 @@ export default function RootLayout() {
     return null;
   }
 
+  const onSwipeRight = (event: any) => {
+    if (event.nativeEvent.translationX > 50 && router.canGoBack()) {
+      router.back();
+    }
+  };
+
   return (
     <GlobalProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <PanGestureHandler onEnded={onSwipeRight}>
+          <View style={{ flex: 1 }}>
+            <Stack screenOptions={{ headerShown: false }} />
+          </View>
+        </PanGestureHandler>
+      </GestureHandlerRootView>
     </GlobalProvider>
   );
 }
