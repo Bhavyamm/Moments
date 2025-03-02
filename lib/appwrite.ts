@@ -34,17 +34,24 @@ export const account = new Account(client);
 export async function login() {
   try {
     const redirectUri = Linking.createURL("/");
+    console.log("Redirect URI:", redirectUri);
 
     const response = await account.createOAuth2Token(
       OAuthProvider.Google,
       redirectUri
     );
+
+    console.log(response, "response");
+
     if (!response) throw new Error("Create OAuth2 token failed");
 
     const browserResult = await openAuthSessionAsync(
       response.toString(),
       redirectUri
     );
+
+    console.log(browserResult, "browserResult");
+
     if (browserResult.type !== "success")
       throw new Error("Create OAuth2 token failed");
 
@@ -54,7 +61,18 @@ export async function login() {
     if (!secret || !userId) throw new Error("Create OAuth2 token failed");
 
     const session = await account.createSession(userId, secret);
+    console.log("Session:", session);
+
     if (!session) throw new Error("Failed to create session");
+
+    // Generate a JWT for the current session
+    const jwtResponse = await account.createJWT();
+    console.log("JWT Response:", jwtResponse);
+    if (!jwtResponse || !jwtResponse.jwt)
+      throw new Error("Failed to create JWT");
+
+    // Set the JWT so that subsequent API calls are authenticated
+    client.setJWT(jwtResponse.jwt);
 
     return true;
   } catch (error) {
@@ -185,5 +203,48 @@ export const updateFriendshipStatus = async (
   } catch (error) {
     console.error("Error updating friendship status:", error);
     return null;
+  }
+};
+
+export const getFriendsByUserId = async (userId: string) => {
+  try {
+    console.log(userId, "userId");
+
+    const friendships = await databases.listDocuments(
+      config.databaseId!,
+      config.friendshipsCollectionId!,
+      [Query.search("requester_id", userId), Query.search("status", "accepted")]
+    );
+
+    console.log(friendships, "friendships");
+
+    const friends = friendships.documents.map((friendship) => {
+      return friendship.requested_id;
+    });
+
+    if (friends.length === 0) {
+      return [];
+    }
+
+    // Fetch each user individually and collect results
+    const userPromises = friends.map((friendId) =>
+      databases
+        .getDocument(config.databaseId!, config.usersCollectionId!, friendId)
+        .catch((error) => {
+          console.error(`Error fetching user with ID ${friendId}:`, error);
+          return null;
+        })
+    );
+
+    // Wait for all promises to resolve
+    const usersResults = await Promise.all(userPromises);
+
+    // Filter out any null results from failed requests
+    const users = usersResults.filter((user) => user !== null);
+
+    return users;
+  } catch (error) {
+    console.error("Error getting friends by user ID:", error);
+    return [];
   }
 };

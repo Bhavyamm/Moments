@@ -8,6 +8,7 @@ import {
   PanGestureHandler,
 } from "react-native-gesture-handler";
 import { View } from "react-native";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -39,11 +40,13 @@ export default function RootLayout() {
   return (
     <GlobalProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <PanGestureHandler onEnded={onSwipeRight}>
-          <View style={{ flex: 1 }}>
-            <Stack screenOptions={{ headerShown: false }} />
-          </View>
-        </PanGestureHandler>
+        <BottomSheetModalProvider>
+          <PanGestureHandler onEnded={onSwipeRight}>
+            <View style={{ flex: 1 }}>
+              <Stack screenOptions={{ headerShown: false }} />
+            </View>
+          </PanGestureHandler>
+        </BottomSheetModalProvider>
       </GestureHandlerRootView>
     </GlobalProvider>
   );

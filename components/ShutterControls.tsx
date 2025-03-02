@@ -22,9 +22,9 @@ export default function ShutterControls({
     <View style={styles.shutterContainer}>
       <Pressable onPress={onToggleMode}>
         {mode === "picture" ? (
-          <AntDesign name="picture" size={32} />
+          <AntDesign name="picture" size={32} color="white" />
         ) : (
-          <Feather name="video" size={32} />
+          <Feather name="video" size={32} color="white" />
         )}
       </Pressable>
       <Pressable onPress={onCapture}>
@@ -34,6 +34,7 @@ export default function ShutterControls({
               styles.shutterBtn,
               {
                 opacity: pressed ? 0.5 : 1,
+                borderColor: "white",
               },
             ]}
           >
@@ -41,7 +42,7 @@ export default function ShutterControls({
               style={[
                 styles.shutterBtnInner,
                 {
-                  backgroundColor: mode === "picture" ? "white" : "red",
+                  backgroundColor: mode === "picture" ? "black" : "red",
                 },
               ]}
             />
@@ -49,7 +50,7 @@ export default function ShutterControls({
         )}
       </Pressable>
       <Pressable onPress={onToggleFacing}>
-        <FontAwesome6 name="arrows-rotate" size={32} />
+        <FontAwesome6 name="arrows-rotate" size={32} color="white" />
       </Pressable>
     </View>
   );
@@ -64,7 +65,6 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   shutterBtn: {
-    backgroundColor: "transparent",
     borderWidth: 5,
     width: 85,
     height: 85,

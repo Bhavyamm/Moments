@@ -204,7 +204,7 @@ export default function Profile() {
       <Text style={styles.contactsHeader}>Contacts</Text>
       <FlatList
         data={contacts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id?.toString() || Math.random().toString()} // TODO: Handle this properly
         renderItem={renderContactItem}
         contentContainerStyle={styles.contactsList}
       />
