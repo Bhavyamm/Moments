@@ -135,7 +135,7 @@ export default function Home() {
     setFacing((prev) => (prev === "back" ? "front" : "back"));
   };
 
-  const handleSend = () => {
+  const handleOpenFriendsBottomSheet = () => {
     console.log("send button clicked");
     setShowFriendsList(true);
   };
@@ -144,8 +144,9 @@ export default function Home() {
     setUri(null);
   };
 
-  const handleFriendsBottomSheetClose = () => {
+  const handleImageSend = () => {
     setShowFriendsList(false);
+    setUri(null);
   };
 
   return (
@@ -170,7 +171,7 @@ export default function Home() {
 
       {uri ? (
         <ShutterControlsAfterCapture
-          onSend={handleSend}
+          onSend={handleOpenFriendsBottomSheet}
           onDiscard={handleDiscard}
         />
       ) : (
@@ -191,8 +192,9 @@ export default function Home() {
 
       <FriendsListBottomSheet
         isVisible={showFriendsList}
-        onClose={handleFriendsBottomSheetClose}
+        handleImageSend={handleImageSend}
         friends={friends}
+        uri={uri!}
       />
     </View>
   );

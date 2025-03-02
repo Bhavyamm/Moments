@@ -10,20 +10,25 @@ import {
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { Models } from "react-native-appwrite";
+import { createImageMetadata, uploadImage } from "@/lib/appwrite";
+import { useGlobalContext } from "@/lib/global-provider";
 
 interface FriendsListBottomSheetProps {
   isVisible: boolean;
-  onClose: () => void;
+  handleImageSend: () => void;
   friends: Models.Document[];
+  uri: string;
 }
 
 const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
   isVisible,
-  onClose,
+  handleImageSend,
   friends,
+  uri,
 }) => {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const { user } = useGlobalContext();
   const snapPoints = useMemo(() => ["50%", "75%"], []);
 
   useEffect(() => {
@@ -43,9 +48,44 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
     });
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     console.log("Sending to selected users:", selectedUsers);
-    onClose();
+
+    try {
+      const fileName = `${Date.now()}.jpg`;
+
+      const file = {
+        name: fileName,
+        type: "image/jpeg",
+        uri: uri,
+      };
+
+      console.log("File prepared:", file);
+
+      const uploadedFile = await uploadImage(file);
+
+      if (!uploadedFile || !uploadedFile.$id) {
+        throw new Error("File upload failed");
+      }
+
+      console.log("Upload successful:", uploadedFile);
+
+      const response = await createImageMetadata(
+        uploadedFile.$id,
+        user?.$id!,
+        selectedUsers
+      );
+
+      if (!response) {
+        throw new Error("Failed to create image metadata");
+      }
+
+      handleImageSend();
+      alert("Image sent successfully!");
+    } catch (error) {
+      console.error("Error sending image:", error);
+      alert("Failed to send image");
+    }
   };
 
   const getInitials = (name: string) => {
@@ -87,7 +127,7 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
 
   const handleSheetChanges = (index: number) => {
     if (index === -1) {
-      onClose();
+      handleImageSend();
     }
   };
 

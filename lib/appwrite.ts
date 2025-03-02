@@ -6,9 +6,11 @@ import {
   ID,
   OAuthProvider,
   Query,
+  Storage,
 } from "react-native-appwrite";
 import * as Linking from "expo-linking";
 import { openAuthSessionAsync } from "expo-web-browser";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const config = {
   platform: "com.bhavyam.memories",
@@ -18,21 +20,38 @@ export const config = {
   usersCollectionId: process.env.EXPO_PUBLIC_APPWRITE_USERS_COLLECTION_ID,
   friendshipsCollectionId:
     process.env.EXPO_PUBLIC_APPWRITE_FRIENDSHIPS_COLLECTION_ID,
+  imagesCollectionId: process.env.EXPO_PUBLIC_APPWRITE_IMAGES_COLLECTION_ID,
+  imagesBucketId: process.env.EXPO_PUBLIC_APPWRITE_IMAGES_BUCKET_ID,
 };
 
-export const client = new Client();
-export const databases = new Databases(client);
+export const getClient = () => {
+  const client = new Client();
+  client
+    .setEndpoint(config.endpoint!)
+    .setProject(config.projectId!)
+    .setPlatform(config.platform);
+  return client;
+};
 
-client
-  .setEndpoint(config.endpoint!)
-  .setProject(config.projectId!)
-  .setPlatform(config.platform);
+export let client = getClient();
+export let databases = new Databases(client);
+export let avatar = new Avatars(client);
+export let account = new Account(client);
+export let storage = new Storage(client);
 
-export const avatar = new Avatars(client);
-export const account = new Account(client);
+export const resetClients = async () => {
+  client = getClient();
+  databases = new Databases(client);
+  avatar = new Avatars(client);
+  account = new Account(client);
+
+  await AsyncStorage.removeItem("authSession");
+};
 
 export async function login() {
   try {
+    await resetClients();
+
     const redirectUri = Linking.createURL("/");
     console.log("Redirect URI:", redirectUri);
 
@@ -65,18 +84,17 @@ export async function login() {
 
     if (!session) throw new Error("Failed to create session");
 
-    // Generate a JWT for the current session
     const jwtResponse = await account.createJWT();
     console.log("JWT Response:", jwtResponse);
     if (!jwtResponse || !jwtResponse.jwt)
       throw new Error("Failed to create JWT");
 
-    // Set the JWT so that subsequent API calls are authenticated
     client.setJWT(jwtResponse.jwt);
 
     return true;
   } catch (error) {
     console.error(error);
+    await resetClients();
     return false;
   }
 }
@@ -84,9 +102,11 @@ export async function login() {
 export async function logout() {
   try {
     const result = await account.deleteSession("current");
+    await resetClients();
     return result;
   } catch (error) {
     console.error(error);
+    await resetClients();
     return false;
   }
 }
@@ -208,15 +228,11 @@ export const updateFriendshipStatus = async (
 
 export const getFriendsByUserId = async (userId: string) => {
   try {
-    console.log(userId, "userId");
-
     const friendships = await databases.listDocuments(
       config.databaseId!,
       config.friendshipsCollectionId!,
       [Query.search("requester_id", userId), Query.search("status", "accepted")]
     );
-
-    console.log(friendships, "friendships");
 
     const friends = friendships.documents.map((friendship) => {
       return friendship.requested_id;
@@ -226,7 +242,6 @@ export const getFriendsByUserId = async (userId: string) => {
       return [];
     }
 
-    // Fetch each user individually and collect results
     const userPromises = friends.map((friendId) =>
       databases
         .getDocument(config.databaseId!, config.usersCollectionId!, friendId)
@@ -236,15 +251,68 @@ export const getFriendsByUserId = async (userId: string) => {
         })
     );
 
-    // Wait for all promises to resolve
     const usersResults = await Promise.all(userPromises);
 
-    // Filter out any null results from failed requests
     const users = usersResults.filter((user) => user !== null);
 
     return users;
   } catch (error) {
     console.error("Error getting friends by user ID:", error);
     return [];
+  }
+};
+
+export const uploadImage = async (file: {
+  name: string;
+  type: string;
+  uri: string;
+}) => {
+  try {
+    if (!file) {
+      throw new Error("No file provided");
+    }
+
+    const response = await storage.createFile(
+      config.imagesBucketId!,
+      ID.unique(),
+      {
+        name: file.name,
+        type: file.type,
+        size: 0,
+        uri: file.uri,
+      }
+    );
+
+    if (!response) {
+      throw new Error("File upload failed");
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    throw error;
+  }
+};
+
+export const createImageMetadata = async (
+  imageId: string,
+  senderId: string,
+  selectedFriendIds: string[]
+) => {
+  try {
+    const response = await databases.createDocument(
+      config.databaseId!,
+      config.imagesCollectionId!,
+      ID.unique(),
+      {
+        image_id: imageId,
+        sender_id: senderId,
+        recipients: selectedFriendIds,
+      }
+    );
+    return response;
+  } catch (error) {
+    console.error("Error creating image metadata:", error);
+    return null;
   }
 };
