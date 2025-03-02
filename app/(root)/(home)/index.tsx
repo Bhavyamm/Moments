@@ -10,11 +10,17 @@ import { Image } from "expo-image";
 import ShutterControls from "@/components/ShutterControls";
 import * as Linking from "expo-linking";
 import { AddFriendModal } from "@/components/AddFriendModal";
-import { checkFriendshipStatus, getFriendsByUserId } from "@/lib/appwrite";
+import {
+  checkFriendshipStatus,
+  getFriendsByUserId,
+  getImageFromStorage,
+  getUnViewedImages,
+} from "@/lib/appwrite";
 import { ShutterControlsAfterCapture } from "@/components/ShutterControlsAfterCapture";
 import FriendsListBottomSheet from "@/components/FriendsListBottomSheet";
 import { useGlobalContext } from "@/lib/global-provider";
 import { Models } from "react-native-appwrite";
+import { UnViewedImages } from "@/components/UnViewedImages";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -25,6 +31,10 @@ export default function Home() {
   const [recording, setRecording] = useState(false);
   const [showFriendsList, setShowFriendsList] = useState(false);
   const [friends, setFriends] = useState<Models.Document[]>([]);
+  const [unviewedImages, setUnviewedImages] = useState<Models.Document[]>([]);
+
+  console.log(unviewedImages, "unviewedImages");
+  console.log(uri, "uri");
 
   const { user } = useGlobalContext();
 
@@ -96,6 +106,30 @@ export default function Home() {
     return () => subscription.remove();
   }, []);
 
+  useEffect(() => {
+    const fetchUnviewedImages = async () => {
+      try {
+        const unViewedImages = await getUnViewedImages(user?.$id!);
+
+        const imagesWithStorageData = await Promise.all(
+          unViewedImages.map(async (image) => {
+            const storageData = await getImageFromStorage(image.image_id);
+            return {
+              ...image,
+              storageData,
+            };
+          })
+        );
+
+        setUnviewedImages(imagesWithStorageData);
+      } catch (error) {
+        console.error("Error fetching unviewed images:", error);
+      }
+    };
+
+    fetchUnviewedImages();
+  }, []);
+
   if (!permission) return null;
 
   if (!permission.granted) {
@@ -151,51 +185,57 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.cameraContainer}>
-        <CameraView
-          style={styles.camera}
-          ref={ref}
-          mode={mode}
-          facing={facing}
-          mute={false}
-          animateShutter={false}
-          mirror={true}
-          responsiveOrientationWhenOrientationLocked
-        />
-        {uri && (
-          <View style={styles.capturedImageOverlay}>
-            <Image source={{ uri: uri }} style={styles.capturedImage} />
-          </View>
-        )}
-      </View>
-
-      {uri ? (
-        <ShutterControlsAfterCapture
-          onSend={handleOpenFriendsBottomSheet}
-          onDiscard={handleDiscard}
-        />
+      {unviewedImages.length > 0 ? (
+        <UnViewedImages unviewedImages={unviewedImages} />
       ) : (
-        <ShutterControls
-          mode={mode}
-          onToggleMode={toggleMode}
-          onCapture={mode === "picture" ? takePicture : recordVideo}
-          onToggleFacing={toggleFacing}
-        />
+        <>
+          <View style={styles.cameraContainer}>
+            <CameraView
+              style={styles.camera}
+              ref={ref}
+              mode={mode}
+              facing={facing}
+              mute={false}
+              animateShutter={false}
+              mirror={true}
+              responsiveOrientationWhenOrientationLocked
+            />
+            {uri && (
+              <View style={styles.capturedImageOverlay}>
+                <Image source={{ uri: uri }} style={styles.capturedImage} />
+              </View>
+            )}
+          </View>
+
+          {uri ? (
+            <ShutterControlsAfterCapture
+              onSend={handleOpenFriendsBottomSheet}
+              onDiscard={handleDiscard}
+            />
+          ) : (
+            <ShutterControls
+              mode={mode}
+              onToggleMode={toggleMode}
+              onCapture={mode === "picture" ? takePicture : recordVideo}
+              onToggleFacing={toggleFacing}
+            />
+          )}
+
+          <AddFriendModal
+            modalVisible={modalVisible}
+            setModalVisible={setModalVisible}
+            friendId={friendId}
+            userId={userId}
+          />
+
+          <FriendsListBottomSheet
+            isVisible={showFriendsList}
+            handleImageSend={handleImageSend}
+            friends={friends}
+            uri={uri!}
+          />
+        </>
       )}
-
-      <AddFriendModal
-        modalVisible={modalVisible}
-        setModalVisible={setModalVisible}
-        friendId={friendId}
-        userId={userId}
-      />
-
-      <FriendsListBottomSheet
-        isVisible={showFriendsList}
-        handleImageSend={handleImageSend}
-        friends={friends}
-        uri={uri!}
-      />
     </View>
   );
 }

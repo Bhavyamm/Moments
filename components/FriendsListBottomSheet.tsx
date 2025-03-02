@@ -53,7 +53,6 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
 
     try {
       const fileName = `${Date.now()}.jpg`;
-
       const file = {
         name: fileName,
         type: "image/jpeg",
@@ -61,7 +60,6 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
       };
 
       console.log("File prepared:", file);
-
       const uploadedFile = await uploadImage(file);
 
       if (!uploadedFile || !uploadedFile.$id) {
@@ -70,18 +68,22 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
 
       console.log("Upload successful:", uploadedFile);
 
-      const response = await createImageMetadata(
-        uploadedFile.$id,
-        user?.$id!,
-        selectedUsers
-      );
+      const metadataPromises = selectedUsers.map(async (recipientId) => {
+        return createImageMetadata(uploadedFile.$id, user?.$id!, recipientId);
+      });
 
-      if (!response) {
-        throw new Error("Failed to create image metadata");
+      const responses = await Promise.allSettled(metadataPromises);
+
+      if (responses.some((response) => !response)) {
+        throw new Error("Failed to create image metadata for some users");
       }
 
       handleImageSend();
-      alert("Image sent successfully!");
+      alert(
+        `Image sent successfully to ${selectedUsers.length} ${
+          selectedUsers.length === 1 ? "friend" : "friends"
+        }!`
+      );
     } catch (error) {
       console.error("Error sending image:", error);
       alert("Failed to send image");

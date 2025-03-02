@@ -297,7 +297,7 @@ export const uploadImage = async (file: {
 export const createImageMetadata = async (
   imageId: string,
   senderId: string,
-  selectedFriendIds: string[]
+  recipient_id: string
 ) => {
   try {
     const response = await databases.createDocument(
@@ -307,12 +307,41 @@ export const createImageMetadata = async (
       {
         image_id: imageId,
         sender_id: senderId,
-        recipients: selectedFriendIds,
+        recipient_id: recipient_id,
       }
     );
     return response;
   } catch (error) {
     console.error("Error creating image metadata:", error);
+    return null;
+  }
+};
+
+export const getUnViewedImages = async (userId: string) => {
+  try {
+    const images = await databases.listDocuments(
+      config.databaseId!,
+      config.imagesCollectionId!,
+      [Query.search("recipient_id", userId)]
+    );
+
+    const unViewedImages = images.documents.filter((image) => {
+      return !image.is_viewed;
+    });
+
+    return unViewedImages;
+  } catch (error) {
+    console.error("Error fetching unviewed images:", error);
+    return [];
+  }
+};
+
+export const getImageFromStorage = async (fileId: string) => {
+  try {
+    const response = await storage.getFileView(config.imagesBucketId!, fileId);
+    return response;
+  } catch (error) {
+    console.error("Error getting image from storage:", error);
     return null;
   }
 };
