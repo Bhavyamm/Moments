@@ -130,6 +130,12 @@ export default function Home() {
     fetchUnviewedImages();
   }, []);
 
+  const handleImagesViewed = (viewedImageIds: string[]) => {
+    setUnviewedImages((prev) =>
+      prev.filter((image) => !viewedImageIds.includes(image.$id))
+    );
+  };
+
   if (!permission) return null;
 
   if (!permission.granted) {
@@ -186,7 +192,10 @@ export default function Home() {
   return (
     <View style={styles.container}>
       {unviewedImages.length > 0 ? (
-        <UnViewedImages unviewedImages={unviewedImages} />
+        <UnViewedImages
+          unviewedImages={unviewedImages}
+          onImagesViewed={handleImagesViewed}
+        />
       ) : (
         <>
           <View style={styles.cameraContainer}>

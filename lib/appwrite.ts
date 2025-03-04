@@ -345,3 +345,38 @@ export const getImageFromStorage = async (fileId: string) => {
     return null;
   }
 };
+
+export const updateImageViewedStatus = async (
+  imageId: string,
+  recipientId: string
+) => {
+  try {
+    const images = await databases.listDocuments(
+      config.databaseId!,
+      config.imagesCollectionId!,
+      [
+        Query.equal("image_id", imageId),
+        Query.equal("recipient_id", recipientId),
+      ]
+    );
+
+    if (images.total === 0) {
+      throw new Error("Image not found");
+    }
+
+    const response = await databases.updateDocument(
+      config.databaseId!,
+      config.imagesCollectionId!,
+      images.documents[0].$id,
+      {
+        is_viewed: true,
+        viewed_at: new Date().toISOString(),
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error("Error marking image as viewed:", error);
+    return null;
+  }
+};
