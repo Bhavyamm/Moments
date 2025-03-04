@@ -1,5 +1,4 @@
 import { Redirect, Slot } from "expo-router";
-import { Header } from "@/components/Header";
 import { useGlobalContext } from "@/lib/global-provider";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native";
@@ -19,10 +18,5 @@ export default function AppLayout() {
     return <Redirect href="/welcome" />;
   }
 
-  return (
-    <>
-      <Header />
-      <Slot />
-    </>
-  );
+  return <Slot />;
 }

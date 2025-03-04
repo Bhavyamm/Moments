@@ -5,7 +5,7 @@ import {
   useCameraPermissions,
 } from "expo-camera";
 import { useEffect, useRef, useState } from "react";
-import { Button, Text, View, StyleSheet, Modal } from "react-native";
+import { Button, Text, View, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import ShutterControls from "@/components/ShutterControls";
 import * as Linking from "expo-linking";
@@ -21,6 +21,8 @@ import FriendsListBottomSheet from "@/components/FriendsListBottomSheet";
 import { useGlobalContext } from "@/lib/global-provider";
 import { Models } from "react-native-appwrite";
 import { UnViewedImages } from "@/components/UnViewedImages";
+import { Header } from "@/components/Header";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -33,9 +35,6 @@ export default function Home() {
   const [friends, setFriends] = useState<Models.Document[]>([]);
   const [unviewedImages, setUnviewedImages] = useState<Models.Document[]>([]);
 
-  console.log(unviewedImages, "unviewedImages");
-  console.log(uri, "uri");
-
   const { user } = useGlobalContext();
 
   const [friendId, setFriendId] = useState<string>("");
@@ -45,7 +44,6 @@ export default function Home() {
   useEffect(() => {
     const handleDeepLink = async () => {
       const initialUrl = await Linking.getInitialURL();
-      console.log(initialUrl, "initialUrl");
       if (initialUrl) {
         const { queryParams } = Linking.parse(initialUrl);
         if (queryParams?.friendId && queryParams?.userId) {
@@ -73,7 +71,6 @@ export default function Home() {
     const getFriends = async () => {
       try {
         const users = await getFriendsByUserId(user?.$id!);
-        console.log(users, "friends by user id");
         setFriends(users);
       } catch (error) {
         console.error("Error fetching friends:", error);
@@ -164,7 +161,6 @@ export default function Home() {
     }
     setRecording(true);
     const video = await ref.current?.recordAsync();
-    console.log({ video });
   };
 
   const toggleMode = () => {
@@ -176,7 +172,6 @@ export default function Home() {
   };
 
   const handleOpenFriendsBottomSheet = () => {
-    console.log("send button clicked");
     setShowFriendsList(true);
   };
 
@@ -190,66 +185,73 @@ export default function Home() {
   };
 
   return (
-    <View style={styles.container}>
-      {unviewedImages.length > 0 ? (
-        <UnViewedImages
-          unviewedImages={unviewedImages}
-          onImagesViewed={handleImagesViewed}
-        />
-      ) : (
-        <>
-          <View style={styles.cameraContainer}>
-            <CameraView
-              style={styles.camera}
-              ref={ref}
-              mode={mode}
-              facing={facing}
-              mute={false}
-              animateShutter={false}
-              mirror={true}
-              responsiveOrientationWhenOrientationLocked
-            />
-            {uri && (
-              <View style={styles.capturedImageOverlay}>
-                <Image source={{ uri: uri }} style={styles.capturedImage} />
-              </View>
+    <View style={styles.root}>
+      <Header />
+      <View style={styles.container}>
+        {unviewedImages.length > 0 ? (
+          <UnViewedImages
+            unviewedImages={unviewedImages}
+            onImagesViewed={handleImagesViewed}
+          />
+        ) : (
+          <>
+            <View style={styles.cameraContainer}>
+              <CameraView
+                style={styles.camera}
+                ref={ref}
+                mode={mode}
+                facing={facing}
+                mute={false}
+                animateShutter={false}
+                mirror={true}
+                responsiveOrientationWhenOrientationLocked
+              />
+              {uri && (
+                <View style={styles.capturedImageOverlay}>
+                  <Image source={{ uri: uri }} style={styles.capturedImage} />
+                </View>
+              )}
+            </View>
+
+            {uri ? (
+              <ShutterControlsAfterCapture
+                onSend={handleOpenFriendsBottomSheet}
+                onDiscard={handleDiscard}
+              />
+            ) : (
+              <ShutterControls
+                mode={mode}
+                onToggleMode={toggleMode}
+                onCapture={mode === "picture" ? takePicture : recordVideo}
+                onToggleFacing={toggleFacing}
+              />
             )}
-          </View>
 
-          {uri ? (
-            <ShutterControlsAfterCapture
-              onSend={handleOpenFriendsBottomSheet}
-              onDiscard={handleDiscard}
+            <AddFriendModal
+              modalVisible={modalVisible}
+              setModalVisible={setModalVisible}
+              friendId={friendId}
+              userId={userId}
             />
-          ) : (
-            <ShutterControls
-              mode={mode}
-              onToggleMode={toggleMode}
-              onCapture={mode === "picture" ? takePicture : recordVideo}
-              onToggleFacing={toggleFacing}
+
+            <FriendsListBottomSheet
+              isVisible={showFriendsList}
+              handleImageSend={handleImageSend}
+              friends={friends}
+              uri={uri!}
             />
-          )}
-
-          <AddFriendModal
-            modalVisible={modalVisible}
-            setModalVisible={setModalVisible}
-            friendId={friendId}
-            userId={userId}
-          />
-
-          <FriendsListBottomSheet
-            isVisible={showFriendsList}
-            handleImageSend={handleImageSend}
-            friends={friends}
-            uri={uri!}
-          />
-        </>
-      )}
+          </>
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
   container: {
     flex: 1,
     backgroundColor: "#000",

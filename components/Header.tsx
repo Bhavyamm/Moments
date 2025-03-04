@@ -1,15 +1,20 @@
 import { useGlobalContext } from "@/lib/global-provider";
 import { useRouter } from "expo-router";
-import { Text, View, Image, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Text, View, TouchableOpacity, StatusBar } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 export const Header = () => {
   const { user } = useGlobalContext();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handleAvatarPress = () => {
     router.push("/profile");
+  };
+
+  const handleFriendsPress = () => {
+    // router.push("/friends");
   };
 
   const handleConversationPress = () => {
@@ -17,25 +22,39 @@ export const Header = () => {
   };
 
   return (
-    <SafeAreaView edges={["top"]} className="bg-black p-2" collapsable={false}>
-      <View className="relative flex h-10 align-center pb-2">
-        <Text className="text-left font-montserrat-bold text-primary-100 text-3xl">
-          Memories
-        </Text>
+    <View
+      style={{
+        paddingTop: insets.top,
+        backgroundColor: "black",
+        zIndex: 10,
+      }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="black" />
+      <View className="flex-row items-center justify-between px-4 py-3">
+        <TouchableOpacity
+          onPress={handleAvatarPress}
+          className="bg-gray-700 p-2.5 rounded-full"
+        >
+          <Ionicons name="person-outline" size={22} color="white" />
+        </TouchableOpacity>
 
-        <View className="absolute right-2 flex-row items-center gap-4">
-          <TouchableOpacity onPress={handleConversationPress}>
-            <Ionicons name="chatbubble-outline" size={24} color="white" />
-          </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleFriendsPress}
+          className="bg-gray-700 p-2.5 rounded-full flex-row items-center"
+        >
+          <Ionicons name="people-outline" size={22} color="white" />
+          <Text className="text-white ml-2 font-montserrat-medium">
+            2 Friends
+          </Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleAvatarPress}>
-            <Image
-              source={{ uri: user?.avatar }}
-              className="w-12 h-12 rounded-full"
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={handleConversationPress}
+          className="bg-gray-700 p-2.5 rounded-full"
+        >
+          <Ionicons name="chatbubble-outline" size={22} color="white" />
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };

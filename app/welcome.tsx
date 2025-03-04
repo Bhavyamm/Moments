@@ -43,10 +43,15 @@ export default function Welcome() {
 
         <TouchableOpacity
           onPress={handleLogin}
-          className="bg-white shadow-md shadow-zinc-300 rounded-full w-full py-4 mt-5"
+          className="bg-yellow-100 border-primary-100 border-2 rounded-full w-full py-4 mt-5"
         >
           <View className="flex flex-row items-center justify-center">
-            <Text className="text-lg font-rubik-medium text-black-300 ml-2">
+            <Image
+              source={images.google}
+              className="w-5 h-5"
+              resizeMode="contain"
+            />
+            <Text className="text-lg font-montserrat-bold text-black-300 ml-2">
               Continue with Google
             </Text>
           </View>
