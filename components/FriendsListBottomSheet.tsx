@@ -134,7 +134,7 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
         className={`w-[26px] h-[26px] rounded-full border-2 justify-center items-center
           ${
             selectedUsers.includes(item.$id)
-              ? "bg-[#00E5FF] border-[#00E5FF]"
+              ? "bg-[#FDECAF] border-[#FDECAF]"
               : "border-gray-600"
           }`}
       >

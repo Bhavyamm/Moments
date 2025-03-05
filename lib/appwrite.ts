@@ -175,6 +175,21 @@ export const getUserByPhoneNumber = async (phoneNumber: string) => {
   }
 };
 
+export const getUserById = async (userId: string) => {
+  try {
+    const user = await databases.getDocument(
+      config.databaseId!,
+      config.usersCollectionId!,
+      userId
+    );
+
+    return user;
+  } catch (error) {
+    console.error("Error finding user by ID:", error);
+    return null;
+  }
+};
+
 export const checkFriendshipStatus = async (
   userId: string,
   friendId: string

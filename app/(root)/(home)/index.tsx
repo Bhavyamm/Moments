@@ -9,7 +9,7 @@ import { Button, Text, View, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import ShutterControls from "@/components/ShutterControls";
 import * as Linking from "expo-linking";
-import { AddFriendModal } from "@/components/AddFriendModal";
+import { FriendRequestModal } from "@/components/FriendRequestModal";
 import {
   checkFriendshipStatus,
   getImageFromStorage,
@@ -222,7 +222,7 @@ export default function Home() {
               />
             )}
 
-            <AddFriendModal
+            <FriendRequestModal
               modalVisible={modalVisible}
               setModalVisible={setModalVisible}
               friendId={friendId}
