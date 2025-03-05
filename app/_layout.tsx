@@ -12,11 +12,9 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    "Montserrat-Bold": require("../assets/fonts/Montserrat-Bold.ttf"),
-    "Montserrat-ExtraBold": require("../assets/fonts/Montserrat-ExtraBold.ttf"),
-    "Montserrat-Light": require("../assets/fonts/Montserrat-Light.ttf"),
-    "Montserrat-Medium": require("../assets/fonts/Montserrat-Medium.ttf"),
-    "Montserrat-Regular": require("../assets/fonts/Montserrat-Regular.ttf"),
+    "Rubik-Bold": require("../assets/fonts/Rubik-Bold.ttf"),
+    "Rubik-Medium": require("../assets/fonts/Rubik-Medium.ttf"),
+    "Rubik-Regular": require("../assets/fonts/Rubik-Regular.ttf"),
   });
 
   const router = useRouter();

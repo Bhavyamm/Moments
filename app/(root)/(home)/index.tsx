@@ -21,6 +21,7 @@ import { useGlobalContext } from "@/lib/global-provider";
 import { Models } from "react-native-appwrite";
 import { UnViewedImages } from "@/components/UnViewedImages";
 import { Header } from "@/components/Header";
+import AddFriendsBottomSheet from "@/components/AddFriendsBottomSheet";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -31,6 +32,8 @@ export default function Home() {
   const [recording, setRecording] = useState(false);
   const [showFriendsList, setShowFriendsList] = useState(false);
   const [unviewedImages, setUnviewedImages] = useState<Models.Document[]>([]);
+  const [showFriendsAndContactsList, setShowFriendsAndContactsList] =
+    useState(false);
 
   const { user, friends } = useGlobalContext();
 
@@ -159,6 +162,10 @@ export default function Home() {
     setShowFriendsList(true);
   };
 
+  const handleOpenFriendsAndContactsBottomSheet = () => {
+    setShowFriendsAndContactsList(true);
+  };
+
   const handleDiscard = () => {
     setUri(null);
   };
@@ -170,7 +177,11 @@ export default function Home() {
 
   return (
     <View style={styles.root}>
-      <Header />
+      <Header
+        handleOpenFriendsAndContactsBottomSheet={
+          handleOpenFriendsAndContactsBottomSheet
+        }
+      />
       <View style={styles.container}>
         {unviewedImages.length > 0 ? (
           <UnViewedImages
@@ -223,6 +234,12 @@ export default function Home() {
               handleImageSend={handleImageSend}
               friends={friends}
               uri={uri!}
+            />
+
+            <AddFriendsBottomSheet
+              isVisible={showFriendsAndContactsList}
+              onClose={() => setShowFriendsAndContactsList(false)}
+              userId={user?.$id!}
             />
           </>
         )}

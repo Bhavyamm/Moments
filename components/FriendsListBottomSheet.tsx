@@ -8,7 +8,11 @@ import {
   Image,
   StatusBar,
 } from "react-native";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetBackdropProps,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { Models } from "react-native-appwrite";
 import { createImageMetadata, uploadImage } from "@/lib/appwrite";
@@ -118,12 +122,12 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
         />
       ) : (
         <View className="w-12 h-12 rounded-full mr-4 bg-gray-700 justify-center items-center">
-          <Text className="text-white text-lg font-montserrat-medium">
+          <Text className="text-white text-lg font-rubik-medium">
             {getInitials(item.name)}
           </Text>
         </View>
       )}
-      <Text className="flex-1 text-white text-base font-montserrat-medium">
+      <Text className="flex-1 text-white text-base font-rubik-medium">
         {item.name}
       </Text>
       <View
@@ -147,6 +151,18 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
     }
   };
 
+  const renderBackdrop = React.useCallback(
+    (props: BottomSheetBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.8}
+      />
+    ),
+    []
+  );
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -157,13 +173,16 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
       handleStyle={styles.sheetHandle}
       handleIndicatorStyle={styles.indicator}
       backgroundStyle={styles.sheetBackground}
+      enableContentPanningGesture={true}
+      enableHandlePanningGesture={true}
+      backdropComponent={renderBackdrop}
     >
       <BottomSheetView style={styles.contentContainer}>
-        <Text className="text-xl text-white text-center font-montserrat-bold my-4 tracking-wider">
+        <Text className="text-xl text-white text-center font-rubik-bold my-4 tracking-wider">
           Send to Friends
         </Text>
         <View className="mb-3 px-2">
-          <Text className="text-sm text-gray-400 font-montserrat-medium">
+          <Text className="text-sm text-gray-400 font-rubik-medium">
             {selectedUsers.length > 0
               ? `${selectedUsers.length} ${
                   selectedUsers.length === 1 ? "friend" : "friends"
@@ -188,7 +207,7 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
           >
             <View className="flex flex-row items-center justify-center">
               <Ionicons name="paper-plane" size={20} color="text-black-300" />
-              <Text className="text-lg font-montserrat-bold text-black-300 ml-2">
+              <Text className="text-lg font-rubik-bold text-black-300 ml-2">
                 Send to Friends
               </Text>
             </View>

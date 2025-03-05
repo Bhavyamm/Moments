@@ -65,23 +65,25 @@ export default function FriendsList({ userId }: FriendsProps) {
 
   const renderFriendItem = ({ item }: { item: Friend }) => {
     return (
-      <View className="flex-row items-center py-4 border-b border-gray-800">
+      <View className="flex-row items-center py-4 border-b border-white/10">
         {item.avatar ? (
           <Image
             source={{ uri: item.avatar }}
             className="w-12 h-12 rounded-full mr-4"
           />
         ) : (
-          <View className="w-12 h-12 rounded-full mr-4 bg-gray-700 items-center justify-center">
-            <Text className="text-white text-lg font-montserrat-medium">
+          <View className="w-12 h-12 rounded-full mr-4 bg-black-300/60 items-center justify-center">
+            <Text className="text-white text-lg font-rubik-medium">
               {item.name && item.name.charAt(0)}
             </Text>
           </View>
         )}
 
         <View className="flex-1">
-          <Text className="text-white font-montserrat-medium">{item.name}</Text>
-          <Text className="text-gray-400 text-sm">{item.email}</Text>
+          <Text className="text-white font-rubik-medium">{item.name}</Text>
+          <Text className="text-black-100 text-sm font-rubik">
+            {item.email}
+          </Text>
         </View>
       </View>
     );
@@ -90,18 +92,20 @@ export default function FriendsList({ userId }: FriendsProps) {
   return (
     <View className="flex-1">
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-xl font-montserrat-bold text-white">
-          My Friends
-        </Text>
-        <TouchableOpacity onPress={loadFriends}>
-          <Feather name="refresh-cw" size={18} color="#00E5FF" />
+        <Text className="text-xl font-rubik-bold text-white">My Friends</Text>
+        <TouchableOpacity
+          onPress={loadFriends}
+          className="p-2 rounded-full bg-black-300/60"
+          activeOpacity={0.7}
+        >
+          <Feather name="refresh-cw" size={18} color="#FDECAF" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator color="#00E5FF" size="large" />
-          <Text className="text-gray-400 font-montserrat mt-4">
+          <ActivityIndicator color="#FDECAF" size="large" />
+          <Text className="text-black-100 font-rubik mt-4">
             Loading friends...
           </Text>
         </View>
@@ -117,8 +121,8 @@ export default function FriendsList({ userId }: FriendsProps) {
         />
       ) : (
         <View className="flex-1 justify-center items-center py-10">
-          <Feather name="users" size={48} color="#333" />
-          <Text className="text-gray-400 font-montserrat mt-4 text-center">
+          <Feather name="users" size={48} color="#666876" />
+          <Text className="text-black-100 font-rubik mt-4 text-center">
             You don't have any friends yet.{"\n"}Add some from your contacts!
           </Text>
         </View>

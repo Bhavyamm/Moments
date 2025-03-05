@@ -147,7 +147,7 @@ export default function ContactsList({
 
   const renderContactItem = ({ item }: { item: ContactWithStatus }) => {
     return (
-      <View className="flex-row items-center py-4 border-b border-gray-800">
+      <View className="flex-row items-center py-4 border-b border-white/10">
         {item.imageAvailable && item.image?.uri ? (
           <Image
             source={{
@@ -158,16 +158,16 @@ export default function ContactsList({
             className="w-12 h-12 rounded-full mr-4"
           />
         ) : (
-          <View className="w-12 h-12 rounded-full mr-4 bg-gray-700 items-center justify-center">
-            <Text className="text-white text-lg font-montserrat-medium">
+          <View className="w-12 h-12 rounded-full mr-4 bg-black-300/60 items-center justify-center">
+            <Text className="text-white text-lg font-rubik-medium">
               {item.name && item.name.charAt(0)}
             </Text>
           </View>
         )}
 
         <View className="flex-1">
-          <Text className="text-white font-montserrat-medium">{item.name}</Text>
-          <Text className="text-gray-400 text-sm">
+          <Text className="text-white font-rubik-medium">{item.name}</Text>
+          <Text className="text-black-100 text-sm font-rubik">
             {item.phoneNumbers && item.phoneNumbers[0]?.number}
           </Text>
         </View>
@@ -176,14 +176,14 @@ export default function ContactsList({
         {item.friendshipStatus === "pending" ? (
           <View className="bg-yellow-100/20 px-3 py-2 rounded-lg flex-row items-center">
             <Feather name="clock" size={16} color="#FDECAF" />
-            <Text className="text-yellow-100 font-montserrat-medium ml-2">
+            <Text className="text-yellow-100 font-rubik-medium ml-2">
               Pending
             </Text>
           </View>
         ) : item.friendshipStatus === "accepted" ? (
-          <View className="bg-[#00E5FF]/20 px-3 py-2 rounded-lg flex-row items-center">
-            <Feather name="check" size={16} color="#00E5FF" />
-            <Text className="text-[#00E5FF] font-montserrat-medium ml-2">
+          <View className="bg-orange-100/20 px-3 py-2 rounded-lg flex-row items-center">
+            <Feather name="check" size={16} color="#EC997E" />
+            <Text className="text-orange-100 font-rubik-medium ml-2">
               Friends
             </Text>
           </View>
@@ -191,11 +191,10 @@ export default function ContactsList({
           <TouchableOpacity
             onPress={() => handleAddContact(item)}
             className="bg-primary-100/20 px-3 py-2 rounded-lg flex-row items-center"
+            activeOpacity={0.7}
           >
             <Feather name="user-plus" size={16} color="#475867" />
-            <Text className="text-primary-100 font-montserrat-medium ml-2">
-              Add
-            </Text>
+            <Text className="text-primary-100 font-rubik-medium ml-2">Add</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -205,25 +204,29 @@ export default function ContactsList({
   return (
     <View className="flex-1">
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-xl font-montserrat-bold text-white">
+        <Text className="text-xl font-rubik-bold text-white">
           Phone Contacts
         </Text>
-        <TouchableOpacity onPress={loadContacts}>
-          <Feather name="refresh-cw" size={18} color="#00E5FF" />
+        <TouchableOpacity
+          onPress={loadContacts}
+          className="p-2 rounded-full bg-black-300/60"
+          activeOpacity={0.7}
+        >
+          <Feather name="refresh-cw" size={18} color="#FDECAF" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator color="#00E5FF" size="large" />
-          <Text className="text-gray-400 font-montserrat mt-4">
+          <ActivityIndicator color="#FDECAF" size="large" />
+          <Text className="text-black-100 font-rubik mt-4">
             Loading contacts...
           </Text>
         </View>
       ) : contacts.length === 0 ? (
         <View className="flex-1 justify-center items-center">
-          <Feather name="users" size={48} color="#333" />
-          <Text className="text-gray-400 font-montserrat mt-4 text-center">
+          <Feather name="users" size={48} color="#666876" />
+          <Text className="text-black-100 font-rubik mt-4 text-center px-6">
             No contacts found or permission denied.
           </Text>
         </View>
@@ -234,9 +237,7 @@ export default function ContactsList({
             item.id?.toString() || Math.random().toString()
           }
           renderItem={renderContactItem}
-          contentContainerStyle={{
-            paddingBottom: 20,
-          }}
+          contentContainerStyle={{ paddingBottom: 20 }}
           showsVerticalScrollIndicator={false}
         />
       )}

@@ -6,11 +6,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        montserrat: ["Montserrat-Regular", "sans-serif"],
-        "montserrat-bold": ["Montserrat-Bold", "sans-serif"],
-        "montserrat-extrabold": ["Montserrat-ExtraBold", "sans-serif"],
-        "montserrat-medium": ["Montserrat-Medium", "sans-serif"],
-        "montserrat-light": ["Montserrat-Light", "sans-serif"],
+        rubik: ["Rubik-Regular", "sans-serif"],
+        "rubik-bold": ["Rubik-Bold", "sans-serif"],
+        "rubik-medium": ["Rubik-Medium", "sans-serif"],
       },
       colors: {
         primary: {

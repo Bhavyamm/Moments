@@ -28,16 +28,16 @@ export default function Welcome() {
       />
 
       <View className="px-10">
-        <Text className="text-5xl text-center font-montserrat-bold text-primary-100">
+        <Text className="text-5xl text-center font-rubik-bold text-primary-100">
           Memories
         </Text>
 
-        <Text className="text-2xl font-montserrat-medium text-primary-100 text-center mt-3">
+        <Text className="text-2xl font-rubik-medium text-primary-100 text-center mt-3">
           Stay in touch {"\n"}
           <Text>with your friends</Text>
         </Text>
 
-        <Text className="text-lg font-montserrat text-primary-100 text-center mt-12">
+        <Text className="text-lg font-rubik text-primary-100 text-center mt-12">
           Login to Memories with Google
         </Text>
 
@@ -51,7 +51,7 @@ export default function Welcome() {
               className="w-5 h-5"
               resizeMode="contain"
             />
-            <Text className="text-lg font-montserrat-bold text-black-300 ml-2">
+            <Text className="text-lg font-rubik-bold text-black-300 ml-2">
               Continue with Google
             </Text>
           </View>

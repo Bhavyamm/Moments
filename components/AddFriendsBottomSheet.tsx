@@ -1,12 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  Platform,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import BottomSheet, {
   BottomSheetView,
   BottomSheetBackdrop,
@@ -15,72 +8,29 @@ import BottomSheet, {
 import { Feather } from "@expo/vector-icons";
 import FriendsList from "./FriendsList";
 import ContactsList from "./ContactsList";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface AddFriendsBottomSheetProps {
-  initialIndex: number;
+  isVisible: boolean;
   onClose: () => void;
   userId: string;
 }
 
-// Add a ref type for external control
-export interface AddFriendsBottomSheetHandle {
-  open: () => void;
-  close: () => void;
-}
-
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-const AddFriendsBottomSheet = React.forwardRef<
-  AddFriendsBottomSheetHandle,
-  AddFriendsBottomSheetProps
->(({ initialIndex, onClose, userId }, ref) => {
+const AddFriendsBottomSheet: React.FC<AddFriendsBottomSheetProps> = ({
+  isVisible,
+  onClose,
+  userId,
+}) => {
   const [activeTab, setActiveTab] = useState<"friends" | "contacts">("friends");
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const insets = useSafeAreaInsets();
+  const snapPoints = useMemo(() => ["50%", "75%"], []);
 
-  // Calculate snap points considering safe area insets
-  const snapPoints = useMemo(() => {
-    const bottomInset = Platform.OS === "ios" ? insets.bottom : 0;
-    return [
-      `${Math.round(65 * (SCREEN_HEIGHT / 100))}`,
-      `${Math.round(90 * (SCREEN_HEIGHT / 100))}`,
-    ];
-  }, [insets.bottom]);
-
-  // Use a dedicated effect to control the bottom sheet with better logging
   useEffect(() => {
-    console.log(
-      "AddFriendsBottomSheet - initialIndex changed to:",
-      initialIndex
-    );
-    console.log("BottomSheetRef exists:", !!bottomSheetRef.current);
-
-    // Increased timeout to ensure component is fully rendered
-    const timer = setTimeout(() => {
-      console.log(
-        "Executing delayed bottom sheet control. Current initialIndex:",
-        initialIndex
-      );
-      if (initialIndex >= 0) {
-        console.log("Attempting to open bottom sheet to index:", initialIndex);
-        if (bottomSheetRef.current) {
-          bottomSheetRef.current.snapToIndex(initialIndex);
-          console.log("snapToIndex called successfully");
-        } else {
-          console.warn("bottomSheetRef.current is null when trying to open");
-        }
-      } else {
-        console.log("Attempting to close bottom sheet");
-        bottomSheetRef.current?.close();
-      }
-    }, 300); // Increased timeout for better reliability
-
-    return () => {
-      console.log("Cleaning up bottom sheet effect");
-      clearTimeout(timer);
-    };
-  }, [initialIndex]);
+    if (isVisible) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [isVisible]);
 
   const handleSheetChanges = (index: number) => {
     if (index === -1) {
@@ -105,26 +55,10 @@ const AddFriendsBottomSheet = React.forwardRef<
     []
   );
 
-  // Add a direct method to open the sheet that can be called from outside components if needed
-  React.useImperativeHandle(
-    ref,
-    () => ({
-      open: () => {
-        console.log("Direct open method called");
-        bottomSheetRef.current?.snapToIndex(0);
-      },
-      close: () => {
-        console.log("Direct close method called");
-        bottomSheetRef.current?.close();
-      },
-    }),
-    [bottomSheetRef]
-  );
-
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      index={-1}
+      index={isVisible ? 0 : -1}
       snapPoints={snapPoints}
       enablePanDownToClose
       onChange={handleSheetChanges}
@@ -134,65 +68,61 @@ const AddFriendsBottomSheet = React.forwardRef<
       backdropComponent={renderBackdrop}
       enableContentPanningGesture={true}
       enableHandlePanningGesture={true}
-      animateOnMount={true}
       style={styles.bottomSheet}
     >
       <BottomSheetView style={styles.contentContainer}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Connections</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+        <View className="flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-white/10">
+          <Text className="text-xl text-white font-rubik-bold tracking-wide">
+            Connections
+          </Text>
+          <TouchableOpacity onPress={onClose} className="p-1">
             <Feather name="x" size={24} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
+        <View className="flex-row px-5 py-3 border-b border-white/10">
           <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "friends" && styles.activeTabButton,
-            ]}
             onPress={() => setActiveTab("friends")}
+            className={`flex-row items-center py-2 px-4 rounded-full mr-3 ${
+              activeTab === "friends" ? "bg-yellow-100" : "bg-black-300/60"
+            }`}
           >
             <Feather
               name="users"
               size={18}
-              color={activeTab === "friends" ? "#00E5FF" : "#666"}
+              color={activeTab === "friends" ? "#191D31" : "#8C8E98"}
             />
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "friends" && styles.activeTabText,
-              ]}
+              className={`ml-2 font-rubik-medium ${
+                activeTab === "friends" ? "text-black-300" : "text-black-100"
+              }`}
             >
               Friends
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === "contacts" && styles.activeTabButton,
-            ]}
             onPress={() => setActiveTab("contacts")}
+            className={`flex-row items-center py-2 px-4 rounded-full ${
+              activeTab === "contacts" ? "bg-yellow-100" : "bg-black-300/60"
+            }`}
           >
             <Feather
               name="phone"
               size={18}
-              color={activeTab === "contacts" ? "#00E5FF" : "#666"}
+              color={activeTab === "contacts" ? "#191D31" : "#8C8E98"}
             />
             <Text
-              style={[
-                styles.tabText,
-                activeTab === "contacts" && styles.activeTabText,
-              ]}
+              className={`ml-2 font-rubik-medium ${
+                activeTab === "contacts" ? "text-black-300" : "text-black-100"
+              }`}
             >
               Contacts
             </Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.contentArea}>
+        <View className="flex-1 p-5">
           {activeTab === "friends" ? (
             <FriendsList userId={userId} />
           ) : (
@@ -205,7 +135,7 @@ const AddFriendsBottomSheet = React.forwardRef<
       </BottomSheetView>
     </BottomSheet>
   );
-});
+};
 
 const styles = StyleSheet.create({
   bottomSheet: {
@@ -234,57 +164,6 @@ const styles = StyleSheet.create({
   },
   sheetBackground: {
     backgroundColor: "#121212",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    letterSpacing: 0.5,
-  },
-  closeButton: {
-    padding: 4,
-  },
-  tabContainer: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
-  },
-  tabButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 30,
-    marginRight: 12,
-    backgroundColor: "rgba(30,30,30,0.6)",
-  },
-  activeTabButton: {
-    backgroundColor: "rgba(0,229,255,0.15)",
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-    marginLeft: 8,
-  },
-  activeTabText: {
-    color: "#00E5FF",
-  },
-  contentArea: {
-    flex: 1,
-    padding: 20,
   },
 });
 

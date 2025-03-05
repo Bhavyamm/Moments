@@ -10,7 +10,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
-export const Header = () => {
+export const Header = ({
+  handleOpenFriendsAndContactsBottomSheet,
+}: {
+  handleOpenFriendsAndContactsBottomSheet: () => void;
+}) => {
   const { friends, friendsLoading } = useGlobalContext();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -19,7 +23,10 @@ export const Header = () => {
     router.push("/profile");
   };
 
-  const handleFriendsPress = () => {};
+  const handleFriendsPress = () => {
+    handleOpenFriendsAndContactsBottomSheet();
+  };
+
   const handleConversationPress = () => {};
 
   return (
@@ -51,7 +58,7 @@ export const Header = () => {
               style={{ marginLeft: 8 }}
             />
           ) : (
-            <Text className="text-white ml-2 font-montserrat-medium">
+            <Text className="text-white ml-2 font-rubik-medium">
               {`${friends?.length || 0} Friends`}
             </Text>
           )}
