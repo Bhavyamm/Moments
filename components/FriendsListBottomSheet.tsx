@@ -13,7 +13,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Models } from "react-native-appwrite";
 import { createImageMetadata, uploadImage } from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
-import { LinearGradient } from "expo-linear-gradient";
 
 interface FriendsListBottomSheetProps {
   isVisible: boolean;
@@ -159,48 +158,43 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
       handleIndicatorStyle={styles.indicator}
       backgroundStyle={styles.sheetBackground}
     >
-      <LinearGradient
-        colors={["#1E1E1E", "#121212"]}
-        style={styles.gradientBackground}
-      >
-        <BottomSheetView style={styles.contentContainer}>
-          <Text className="text-xl text-white text-center font-montserrat-bold my-4 tracking-wider">
-            Send to Friends
+      <BottomSheetView style={styles.contentContainer}>
+        <Text className="text-xl text-white text-center font-montserrat-bold my-4 tracking-wider">
+          Send to Friends
+        </Text>
+        <View className="mb-3 px-2">
+          <Text className="text-sm text-gray-400 font-montserrat-medium">
+            {selectedUsers.length > 0
+              ? `${selectedUsers.length} ${
+                  selectedUsers.length === 1 ? "friend" : "friends"
+                } selected`
+              : "Select friends to share with"}
           </Text>
-          <View className="mb-3 px-2">
-            <Text className="text-sm text-gray-400 font-montserrat-medium">
-              {selectedUsers.length > 0
-                ? `${selectedUsers.length} ${
-                    selectedUsers.length === 1 ? "friend" : "friends"
-                  } selected`
-                : "Select friends to share with"}
-            </Text>
-          </View>
-          <FlatList
-            data={friends}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.$id}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={friends.length > 4}
-          />
-          <View className="pt-4 pb-8">
-            <TouchableOpacity
-              className={`bg-yellow-100 border-2 border-primary-100 rounded-full py-4 mt-5 w-full
+        </View>
+        <FlatList
+          data={friends}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.$id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={friends.length > 4}
+        />
+        <View className="pt-4 pb-8">
+          <TouchableOpacity
+            className={`bg-yellow-100 border-2 border-primary-100 rounded-full py-4 mt-5 w-full
               ${selectedUsers.length === 0 ? "opacity-30" : ""}`}
-              onPress={handleSend}
-              disabled={selectedUsers.length === 0}
-            >
-              <View className="flex flex-row items-center justify-center">
-                <Ionicons name="paper-plane" size={20} color="text-black-300" />
-                <Text className="text-lg font-montserrat-bold text-black-300 ml-2">
-                  Send to Friends
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </BottomSheetView>
-      </LinearGradient>
+            onPress={handleSend}
+            disabled={selectedUsers.length === 0}
+          >
+            <View className="flex flex-row items-center justify-center">
+              <Ionicons name="paper-plane" size={20} color="text-black-300" />
+              <Text className="text-lg font-montserrat-bold text-black-300 ml-2">
+                Send to Friends
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </BottomSheetView>
     </BottomSheet>
   );
 };
@@ -209,9 +203,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  gradientBackground: {
-    flex: 1,
   },
   sheetBackground: {
     backgroundColor: "#121212",
