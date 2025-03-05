@@ -17,6 +17,7 @@ import * as SMS from "expo-sms";
 import * as Linking from "expo-linking";
 import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
+import { GRANTED, SENT } from "@/constants/constants";
 
 interface ContactWithStatus extends Contacts.Contact {
   friendshipStatus?: "none" | "pending" | "accepted";
@@ -38,7 +39,7 @@ export default function ContactsList({
     setLoading(true);
     try {
       const { status } = await Contacts.requestPermissionsAsync();
-      if (status === "granted") {
+      if (status === GRANTED) {
         const { data } = await Contacts.getContactsAsync({
           fields: [
             Contacts.Fields.Name,
@@ -121,7 +122,7 @@ export default function ContactsList({
     try {
       const { result } = await SMS.sendSMSAsync(recipients, message);
 
-      if (friend.success && friend.user && result === "sent") {
+      if (friend.success && friend.user && result === SENT) {
         const response = await createFriendRequest(userId, friend?.user?.$id);
 
         if (response) {

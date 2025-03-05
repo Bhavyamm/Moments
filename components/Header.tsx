@@ -59,7 +59,11 @@ export const Header = ({
             />
           ) : (
             <Text className="text-white ml-2 font-rubik-medium">
-              {`${friends?.length || 0} Friends`}
+              {friends?.length === 0
+                ? "No Friends"
+                : friends?.length === 1
+                ? "1 Friend"
+                : `${friends?.length} Friends`}
             </Text>
           )}
         </TouchableOpacity>

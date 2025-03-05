@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
+import { ACCEPTED } from "@/constants/constants";
 
 type FriendRequestModalProps = {
   modalVisible: boolean;
@@ -26,7 +27,7 @@ export const FriendRequestModal: React.FC<FriendRequestModalProps> = ({
   const [loading, setLoading] = useState(true);
 
   const handleAcceptFriendRequest = async () => {
-    const response = await updateFriendshipStatus(userId, "accepted");
+    const response = await updateFriendshipStatus(userId, ACCEPTED);
     setModalVisible(false);
   };
 

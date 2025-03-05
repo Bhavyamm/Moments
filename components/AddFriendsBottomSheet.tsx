@@ -15,12 +15,14 @@ interface AddFriendsBottomSheetProps {
   userId: string;
 }
 
+type ActiveTab = "friends" | "contacts";
+
 const AddFriendsBottomSheet: React.FC<AddFriendsBottomSheetProps> = ({
   isVisible,
   onClose,
   userId,
 }) => {
-  const [activeTab, setActiveTab] = useState<"friends" | "contacts">("friends");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("friends");
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ["50%", "75%"], []);
 

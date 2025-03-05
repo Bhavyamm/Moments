@@ -35,7 +35,6 @@ export default function FriendsList({ userId }: FriendsProps) {
       const response = await getFriendsByUserId(userId);
 
       if (response && Array.isArray(response)) {
-        // Map the response to ensure all required properties are present
         const friendsList = response.map((doc) => ({
           ...doc,
           name: doc.name || "",
