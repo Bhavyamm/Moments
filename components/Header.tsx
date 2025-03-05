@@ -1,11 +1,17 @@
 import { useGlobalContext } from "@/lib/global-provider";
 import { useRouter } from "expo-router";
-import { Text, View, TouchableOpacity, StatusBar } from "react-native";
+import {
+  Text,
+  View,
+  TouchableOpacity,
+  StatusBar,
+  ActivityIndicator,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 export const Header = () => {
-  const { user } = useGlobalContext();
+  const { friends, friendsLoading } = useGlobalContext();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -13,13 +19,8 @@ export const Header = () => {
     router.push("/profile");
   };
 
-  const handleFriendsPress = () => {
-    // router.push("/friends");
-  };
-
-  const handleConversationPress = () => {
-    // router.push("/conversations");
-  };
+  const handleFriendsPress = () => {};
+  const handleConversationPress = () => {};
 
   return (
     <View
@@ -43,9 +44,17 @@ export const Header = () => {
           className="bg-gray-700 p-2.5 rounded-full flex-row items-center"
         >
           <Ionicons name="people-outline" size={22} color="white" />
-          <Text className="text-white ml-2 font-montserrat-medium">
-            2 Friends
-          </Text>
+          {friendsLoading ? (
+            <ActivityIndicator
+              size="small"
+              color="white"
+              style={{ marginLeft: 8 }}
+            />
+          ) : (
+            <Text className="text-white ml-2 font-montserrat-medium">
+              {`${friends?.length || 0} Friends`}
+            </Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity

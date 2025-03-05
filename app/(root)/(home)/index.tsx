@@ -12,7 +12,6 @@ import * as Linking from "expo-linking";
 import { AddFriendModal } from "@/components/AddFriendModal";
 import {
   checkFriendshipStatus,
-  getFriendsByUserId,
   getImageFromStorage,
   getUnViewedImages,
 } from "@/lib/appwrite";
@@ -22,7 +21,6 @@ import { useGlobalContext } from "@/lib/global-provider";
 import { Models } from "react-native-appwrite";
 import { UnViewedImages } from "@/components/UnViewedImages";
 import { Header } from "@/components/Header";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -32,10 +30,9 @@ export default function Home() {
   const [facing, setFacing] = useState<CameraType>("back");
   const [recording, setRecording] = useState(false);
   const [showFriendsList, setShowFriendsList] = useState(false);
-  const [friends, setFriends] = useState<Models.Document[]>([]);
   const [unviewedImages, setUnviewedImages] = useState<Models.Document[]>([]);
 
-  const { user } = useGlobalContext();
+  const { user, friends } = useGlobalContext();
 
   const [friendId, setFriendId] = useState<string>("");
   const [userId, setUserId] = useState<string>("");
@@ -65,19 +62,6 @@ export default function Home() {
     };
 
     handleDeepLink();
-  }, []);
-
-  useEffect(() => {
-    const getFriends = async () => {
-      try {
-        const users = await getFriendsByUserId(user?.$id!);
-        setFriends(users);
-      } catch (error) {
-        console.error("Error fetching friends:", error);
-      }
-    };
-
-    getFriends();
   }, []);
 
   useEffect(() => {

@@ -6,12 +6,14 @@ import {
   FlatList,
   StyleSheet,
   Image,
+  StatusBar,
 } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { Models } from "react-native-appwrite";
 import { createImageMetadata, uploadImage } from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface FriendsListBottomSheetProps {
   isVisible: boolean;
@@ -34,9 +36,15 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
   useEffect(() => {
     if (isVisible) {
       bottomSheetRef.current?.expand();
+      StatusBar.setBarStyle("light-content");
     } else {
       bottomSheetRef.current?.close();
+      StatusBar.setBarStyle("default");
     }
+
+    return () => {
+      StatusBar.setBarStyle("default");
+    };
   }, [isVisible]);
 
   const toggleUserSelection = (userId: string) => {
@@ -100,28 +108,35 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
 
   const renderItem = ({ item }: { item: Models.Document }) => (
     <TouchableOpacity
-      style={styles.listItem}
+      className="flex-row items-center py-3.5 border-b border-white/10"
       onPress={() => toggleUserSelection(item.$id)}
+      activeOpacity={0.7}
     >
       {item.profile_picture ? (
         <Image
           source={{ uri: item.profile_picture }}
-          style={styles.profileImage}
+          className="w-12 h-12 rounded-full mr-4 bg-gray-700"
         />
       ) : (
-        <View style={[styles.profileImage, styles.initialsContainer]}>
-          <Text style={styles.initialsText}>{getInitials(item.name)}</Text>
+        <View className="w-12 h-12 rounded-full mr-4 bg-gray-700 justify-center items-center">
+          <Text className="text-white text-lg font-montserrat-medium">
+            {getInitials(item.name)}
+          </Text>
         </View>
       )}
-      <Text style={styles.userName}>{item.name}</Text>
+      <Text className="flex-1 text-white text-base font-montserrat-medium">
+        {item.name}
+      </Text>
       <View
-        style={[
-          styles.selectionCircle,
-          selectedUsers.includes(item.$id) && styles.selectedCircle,
-        ]}
+        className={`w-[26px] h-[26px] rounded-full border-2 justify-center items-center
+          ${
+            selectedUsers.includes(item.$id)
+              ? "bg-[#00E5FF] border-[#00E5FF]"
+              : "border-gray-600"
+          }`}
       >
         {selectedUsers.includes(item.$id) && (
-          <Ionicons name="checkmark" size={20} color="white" />
+          <Ionicons name="checkmark" size={18} color="#121212" />
         )}
       </View>
     </TouchableOpacity>
@@ -144,28 +159,48 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
       handleIndicatorStyle={styles.indicator}
       backgroundStyle={styles.sheetBackground}
     >
-      <BottomSheetView style={styles.contentContainer}>
-        <Text style={styles.title}>Send to Friends</Text>
-        <FlatList
-          data={friends}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.$id}
-          contentContainerStyle={styles.listContent}
-        />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            selectedUsers.length === 0 && styles.sendButtonDisabled,
-          ]}
-          onPress={handleSend}
-          disabled={selectedUsers.length === 0}
-        >
-          <Text style={styles.sendButtonText}>
-            Send to {selectedUsers.length > 0 ? selectedUsers.length : ""}{" "}
-            {selectedUsers.length === 1 ? "friend" : "friends"}
+      <LinearGradient
+        colors={["#1E1E1E", "#121212"]}
+        style={styles.gradientBackground}
+      >
+        <BottomSheetView style={styles.contentContainer}>
+          <Text className="text-xl text-white text-center font-montserrat-bold my-4 tracking-wider">
+            Send to Friends
           </Text>
-        </TouchableOpacity>
-      </BottomSheetView>
+          <View className="mb-3 px-2">
+            <Text className="text-sm text-gray-400 font-montserrat-medium">
+              {selectedUsers.length > 0
+                ? `${selectedUsers.length} ${
+                    selectedUsers.length === 1 ? "friend" : "friends"
+                  } selected`
+                : "Select friends to share with"}
+            </Text>
+          </View>
+          <FlatList
+            data={friends}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.$id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={friends.length > 4}
+          />
+          <View className="pt-4 pb-8">
+            <TouchableOpacity
+              className={`bg-yellow-100 border-2 border-primary-100 rounded-full py-4 mt-5 w-full
+              ${selectedUsers.length === 0 ? "opacity-30" : ""}`}
+              onPress={handleSend}
+              disabled={selectedUsers.length === 0}
+            >
+              <View className="flex flex-row items-center justify-center">
+                <Ionicons name="paper-plane" size={20} color="text-black-300" />
+                <Text className="text-lg font-montserrat-bold text-black-300 ml-2">
+                  Send to Friends
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetView>
+      </LinearGradient>
     </BottomSheet>
   );
 };
@@ -173,85 +208,26 @@ const FriendsListBottomSheet: React.FC<FriendsListBottomSheetProps> = ({
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+  },
+  gradientBackground: {
+    flex: 1,
   },
   sheetBackground: {
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#121212",
   },
   sheetHandle: {
-    backgroundColor: "#f8f8f8",
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    backgroundColor: "#121212",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   indicator: {
-    backgroundColor: "#ccc",
+    backgroundColor: "#444",
     width: 40,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginVertical: 12,
-    textAlign: "center",
+    height: 5,
   },
   listContent: {
     paddingBottom: 20,
-  },
-  listItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 16,
-    backgroundColor: "#e0e0e0",
-  },
-  userName: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-  },
-  selectionCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  selectedCircle: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
-  },
-  sendButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    marginVertical: 16,
-  },
-  sendButtonDisabled: {
-    backgroundColor: "#a0c8ff",
-  },
-  sendButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  initialsContainer: {
-    backgroundColor: "#E1E1E1",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  initialsText: {
-    color: "#666",
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
 
