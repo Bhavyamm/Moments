@@ -301,6 +301,17 @@ export default function ContactsList({
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      <View className="absolute bottom-6 left-0 right-0 items-center">
+        <TouchableOpacity
+          onPress={openSettings}
+          className="bg-black-300/80 px-5 py-3 rounded-full flex-row items-center"
+          activeOpacity={0.7}
+        >
+          <Feather name="user-plus" size={18} color="#FDECAF" />
+          <Text className="text-white font-rubik-medium ml-2">Add Contact</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
