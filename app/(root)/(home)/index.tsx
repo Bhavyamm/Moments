@@ -5,7 +5,7 @@ import {
   useCameraPermissions,
 } from "expo-camera";
 import { useEffect, useRef, useState } from "react";
-import { Button, Text, View, StyleSheet } from "react-native";
+import { Text, View, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { Image } from "expo-image";
 import ShutterControls from "@/components/ShutterControls";
 import * as Linking from "expo-linking";
@@ -22,6 +22,7 @@ import { Models } from "react-native-appwrite";
 import { UnViewedImages } from "@/components/UnViewedImages";
 import { Header } from "@/components/Header";
 import AddFriendsBottomSheet from "@/components/AddFriendsBottomSheet";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function Home() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -120,15 +121,46 @@ export default function Home() {
     );
   };
 
+  const handleRequestPermission = async () => {
+    const permissionResult = await requestPermission();
+
+    if (!permissionResult.granted) {
+      Alert.alert(
+        "Camera Permission",
+        "We need camera access to continue. Would you like to open settings and grant permission manually?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open Settings",
+            onPress: () => Linking.openSettings(),
+          },
+        ]
+      );
+    }
+  };
   if (!permission) return null;
 
   if (!permission.granted) {
     return (
-      <View style={styles.centered}>
-        <Text style={{ textAlign: "center" }}>
-          We need your permission to use the camera
-        </Text>
-        <Button onPress={requestPermission} title="Grant permission" />
+      <View style={styles.permissionContainer}>
+        <View style={styles.permissionCard}>
+          <View style={styles.iconContainer}>
+            <MaterialIcons name="camera-alt" size={64} color="#fff" />
+          </View>
+          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionText}>
+            This app needs camera access to capture and share moments with your
+            friends. Your privacy is important to us, and photos are only shared
+            with people you choose.
+          </Text>
+          <TouchableOpacity
+            style={styles.permissionButton}
+            onPress={handleRequestPermission}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.buttonText}>Grant Camera Access</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -257,6 +289,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
     padding: 24,
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+    padding: 24,
+  },
+  permissionCard: {
+    backgroundColor: "#121212",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  iconContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  permissionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  permissionText: {
+    fontSize: 16,
+    color: "#aaa",
+    textAlign: "center",
+    marginBottom: 28,
+    lineHeight: 22,
+  },
+  permissionButton: {
+    backgroundColor: "#3D7DFF",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
   },
   centered: {
     flex: 1,

@@ -3,17 +3,19 @@ import { useGlobalContext } from "@/lib/global-provider";
 import { Alert, Image, Text, TouchableOpacity, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAlert } from "@/lib/alert-context";
 
 export default function Profile() {
   const { user, refetch } = useGlobalContext();
+  const { showAlert } = useAlert();
 
   const handleLogout = async () => {
     const result = await logout();
     if (result) {
-      Alert.alert("Success", "Logged out successfully");
+      showAlert("success", "Logged out successfully!");
       refetch({});
     } else {
-      Alert.alert("Error", "Failed to logout");
+      showAlert("error", "Failed to logout!");
     }
   };
 

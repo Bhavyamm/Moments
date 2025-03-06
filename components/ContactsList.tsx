@@ -4,20 +4,21 @@ import {
   checkFriendshipStatus,
 } from "@/lib/appwrite";
 import {
-  Alert,
   Image,
   FlatList,
   Text,
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import * as Contacts from "expo-contacts";
 import * as SMS from "expo-sms";
-import * as Linking from "expo-linking";
+import * as ExpoLinking from "expo-linking";
 import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { GRANTED, SENT } from "@/constants/constants";
+import { useAlert } from "@/lib/alert-context";
 
 interface ContactWithStatus extends Contacts.Contact {
   friendshipStatus?: "none" | "pending" | "accepted";
@@ -34,61 +35,88 @@ export default function ContactsList({
 }: ContactsProps) {
   const [contacts, setContacts] = useState<ContactWithStatus[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
 
-  const loadContacts = async () => {
-    setLoading(true);
+  const { showAlert } = useAlert();
+
+  const requestContactsPermission = async () => {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
-      if (status === GRANTED) {
-        const { data } = await Contacts.getContactsAsync({
-          fields: [
-            Contacts.Fields.Name,
-            Contacts.Fields.Image,
-            Contacts.Fields.PhoneNumbers,
-          ],
-        });
+      console.log(status, "status");
+      setPermissionStatus(status);
 
-        if (data.length > 0) {
-          const contactsWithStatus = await Promise.all(
-            data.map(async (contact) => {
-              const phoneNumber = contact?.phoneNumbers?.[0]?.number;
-              if (phoneNumber) {
-                try {
-                  const friend = await getUserByPhoneNumber(
-                    phoneNumber.slice(3)
-                  );
-                  if (friend.success && friend.user) {
-                    const friendshipStatus = await checkFriendshipStatus(
-                      userId,
-                      friend.user.$id
-                    );
-                    return {
-                      ...contact,
-                      friendshipStatus: friendshipStatus?.status,
-                    };
-                  }
-                } catch (error) {
-                  console.error("Error checking friendship status:", error);
-                }
-              }
-              return { ...contact, friendshipStatus: "none" };
-            })
-          );
-          setContacts(contactsWithStatus);
-        }
+      if (status === GRANTED) {
+        fetchContacts();
       } else {
-        console.log("Contacts permission not granted");
-        Alert.alert(
-          "Permission Required",
-          "Please allow access to your contacts to use this feature."
-        );
+        setLoading(false);
       }
     } catch (error) {
-      console.error("Error loading contacts:", error);
-      Alert.alert("Error", "Failed to load contacts");
+      console.error("Error requesting contacts permission:", error);
+      setLoading(false);
+      showAlert("error", "Failed to request contacts permission");
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const { data } = await Contacts.getContactsAsync({
+        fields: [
+          Contacts.Fields.Name,
+          Contacts.Fields.Image,
+          Contacts.Fields.PhoneNumbers,
+        ],
+      });
+
+      if (data.length > 0) {
+        const contactsWithStatus = await Promise.all(
+          data.map(async (contact) => {
+            const phoneNumber = contact?.phoneNumbers?.[0]?.number;
+            if (phoneNumber) {
+              try {
+                const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
+                if (friend.success && friend.user) {
+                  const friendshipStatus = await checkFriendshipStatus(
+                    userId,
+                    friend.user.$id
+                  );
+                  return {
+                    ...contact,
+                    friendshipStatus: friendshipStatus?.status,
+                  };
+                }
+              } catch (error) {
+                console.error("Error checking friendship status:", error);
+              }
+            }
+            return { ...contact, friendshipStatus: "none" };
+          })
+        );
+        setContacts(contactsWithStatus);
+      }
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      showAlert("error", "Failed to load contacts");
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadContacts = async () => {
+    setLoading(true);
+    const { status } = await Contacts.getPermissionsAsync();
+    setPermissionStatus(status);
+
+    if (status === GRANTED) {
+      fetchContacts();
+    } else {
+      requestContactsPermission();
+    }
+  };
+
+  const openSettings = () => {
+    Linking.openSettings().catch(() => {
+      showAlert("error", "Unable to open settings");
+    });
   };
 
   useEffect(() => {
@@ -100,19 +128,23 @@ export default function ContactsList({
   const handleAddContact = async (contact: ContactWithStatus) => {
     const phoneNumber = contact?.phoneNumbers?.[0]?.number;
     if (!phoneNumber) {
-      Alert.alert("Error", "No phone number available");
+      showAlert("error", "No phone number available");
       return;
     }
 
     const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
 
-    const deepLinkUrl = Linking.createURL("/", {
+    const deepLinkUrl = ExpoLinking.createURL("/", {
       queryParams: { friendId: friend?.user?.$id, userId: userId },
     });
 
     const isAvailable = await SMS.isAvailableAsync();
     if (!isAvailable) {
-      Alert.alert("SMS Not Available", "Your device does not support SMS");
+      showAlert(
+        "info",
+        "Your device does not support SMS",
+        "SMS Not Available"
+      );
       return;
     }
 
@@ -126,7 +158,7 @@ export default function ContactsList({
         const response = await createFriendRequest(userId, friend?.user?.$id);
 
         if (response) {
-          Alert.alert("Success", "Friend request sent successfully");
+          showAlert("success", "Friend request sent successfully");
           setContacts((prevContacts) =>
             prevContacts.map((c) =>
               c.id === contact.id ? { ...c, friendshipStatus: "pending" } : c
@@ -137,11 +169,11 @@ export default function ContactsList({
             onFriendStatusChange();
           }
         } else {
-          Alert.alert("Error", "Failed to send friend request");
+          showAlert("error", "Failed to send friend request");
         }
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to send SMS");
+      showAlert("error", "Failed to send SMS");
       console.error(error);
     }
   };
@@ -202,6 +234,31 @@ export default function ContactsList({
     );
   };
 
+  const renderPermissionDeniedUI = () => {
+    return (
+      <View className="flex-1 justify-center items-center px-6">
+        <Feather name="users" size={48} color="#666876" />
+        <Text className="text-white font-rubik-bold text-lg mt-4 text-center">
+          Contacts Access Required
+        </Text>
+        <Text className="text-black-100 font-rubik mt-2 text-center">
+          This app needs access to your contacts to find your friends. Your
+          privacy is important to us, and contacts are only used for finding
+          friends on the app.
+        </Text>
+        <TouchableOpacity
+          onPress={openSettings}
+          className="mt-4 px-5 py-3"
+          activeOpacity={0.7}
+        >
+          <Text className="text-black-100 font-rubik-medium">
+            Open Settings
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   return (
     <View className="flex-1">
       <View className="flex-row justify-between items-center mb-4">
@@ -224,11 +281,13 @@ export default function ContactsList({
             Loading contacts...
           </Text>
         </View>
+      ) : permissionStatus !== GRANTED ? (
+        renderPermissionDeniedUI()
       ) : contacts.length === 0 ? (
         <View className="flex-1 justify-center items-center">
           <Feather name="users" size={48} color="#666876" />
           <Text className="text-black-100 font-rubik mt-4 text-center px-6">
-            No contacts found or permission denied.
+            No contacts found.
           </Text>
         </View>
       ) : (

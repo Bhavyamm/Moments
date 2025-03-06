@@ -1,5 +1,6 @@
 import { Alert } from "react-native";
 import { useEffect, useState, useCallback } from "react";
+import { useAlert } from "./alert-context";
 
 interface UseAppwriteOptions<T, P extends Record<string, string | number>> {
   fn: (params: P) => Promise<T>;
@@ -22,6 +23,7 @@ export const useAppwrite = <T, P extends Record<string, string | number>>({
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(!skip);
   const [error, setError] = useState<string | null>(null);
+  const { showAlert } = useAlert();
 
   const fetchData = useCallback(
     async (fetchParams: P) => {
@@ -35,7 +37,7 @@ export const useAppwrite = <T, P extends Record<string, string | number>>({
         const errorMessage =
           err instanceof Error ? err.message : "An unknown error occurred";
         setError(errorMessage);
-        Alert.alert("Error", errorMessage);
+        showAlert("error", errorMessage);
       } finally {
         setLoading(false);
       }

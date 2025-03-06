@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 type AlertProps = {
@@ -9,6 +15,32 @@ type AlertProps = {
 };
 
 const AlertComponent: React.FC<AlertProps> = ({ type, message, onClose }) => {
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    const hideTimeout = setTimeout(() => {
+      handleClose();
+    }, 2700);
+
+    return () => clearTimeout(hideTimeout);
+  }, []);
+
+  const handleClose = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      onClose();
+    });
+  };
+
   const getIconName = () => {
     switch (type) {
       case "success":
@@ -39,29 +71,89 @@ const AlertComponent: React.FC<AlertProps> = ({ type, message, onClose }) => {
     }
   };
 
+  const messageLines = message.split("\n");
+  const hasMultipleLines = messageLines.length > 1;
+
   return (
-    <View style={[styles.container, { backgroundColor: getBackgroundColor() }]}>
-      <Feather name={getIconName()} size={24} color="white" />
-      <Text style={styles.message}>{message}</Text>
-      <TouchableOpacity onPress={onClose}>
-        <Feather name="x" size={24} color="white" />
-      </TouchableOpacity>
-    </View>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          backgroundColor: getBackgroundColor(),
+          opacity: fadeAnim,
+          transform: [
+            {
+              translateY: fadeAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-20, 0],
+              }),
+            },
+          ],
+        },
+      ]}
+    >
+      <View style={styles.contentWrapper}>
+        <Feather
+          name={getIconName()}
+          size={24}
+          color="white"
+          style={styles.icon}
+        />
+
+        <View style={styles.messageContainer}>
+          {hasMultipleLines ? (
+            messageLines.map((line, index) => (
+              <Text key={index} style={styles.message}>
+                {line}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.message}>{message}</Text>
+          )}
+        </View>
+
+        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+          <Feather name="x" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
     borderRadius: 8,
     margin: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  contentWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+  },
+  icon: {
+    marginRight: 12,
+  },
+  messageContainer: {
+    flex: 1,
   },
   message: {
-    flex: 1,
     color: "white",
-    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  closeButton: {
+    marginLeft: 8,
+    padding: 4,
   },
 });
 

@@ -9,6 +9,7 @@ import {
 } from "react-native-gesture-handler";
 import { View } from "react-native";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { AlertProvider } from "@/lib/alert-context";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -37,15 +38,17 @@ export default function RootLayout() {
 
   return (
     <GlobalProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <BottomSheetModalProvider>
-          <PanGestureHandler onEnded={onSwipeRight}>
-            <View style={{ flex: 1 }}>
-              <Stack screenOptions={{ headerShown: false }} />
-            </View>
-          </PanGestureHandler>
-        </BottomSheetModalProvider>
-      </GestureHandlerRootView>
+      <AlertProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <BottomSheetModalProvider>
+            <PanGestureHandler onEnded={onSwipeRight}>
+              <View style={{ flex: 1 }}>
+                <Stack screenOptions={{ headerShown: false }} />
+              </View>
+            </PanGestureHandler>
+          </BottomSheetModalProvider>
+        </GestureHandlerRootView>
+      </AlertProvider>
     </GlobalProvider>
   );
 }

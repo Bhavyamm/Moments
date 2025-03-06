@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Models } from "react-native-appwrite";
+import { useAlert } from "@/lib/alert-context";
 
 interface Friend extends Models.Document {
   name: string;
@@ -26,6 +27,8 @@ interface FriendsProps {
 export default function FriendsList({ userId }: FriendsProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  const { showAlert } = useAlert();
 
   const loadFriends = async () => {
     if (!userId) return;
@@ -51,7 +54,7 @@ export default function FriendsList({ userId }: FriendsProps) {
       }
     } catch (error) {
       console.error("Error loading friends:", error);
-      Alert.alert("Error", "Failed to load friends");
+      showAlert("error", "Failed to load friends");
       setFriends([]);
     } finally {
       setLoading(false);

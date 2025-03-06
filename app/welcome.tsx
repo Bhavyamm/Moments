@@ -4,9 +4,11 @@ import { Redirect } from "expo-router";
 import images from "@/constants/images";
 import { useGlobalContext } from "@/lib/global-provider";
 import { login } from "@/lib/appwrite";
+import { useAlert } from "@/lib/alert-context";
 
 export default function Welcome() {
   const { refetch, loading, isLogged } = useGlobalContext();
+  const { showAlert } = useAlert();
 
   if (!loading && isLogged) return <Redirect href="/" />;
 
@@ -15,7 +17,7 @@ export default function Welcome() {
     if (result) {
       refetch({});
     } else {
-      Alert.alert("Error", "Failed to login");
+      showAlert("error", "Failed to login");
     }
   };
 
