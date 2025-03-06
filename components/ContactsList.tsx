@@ -11,17 +11,28 @@ import {
   View,
   ActivityIndicator,
   Linking,
+  AppState,
 } from "react-native";
 import * as Contacts from "expo-contacts";
 import * as SMS from "expo-sms";
 import * as ExpoLinking from "expo-linking";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Feather } from "@expo/vector-icons";
 import { GRANTED, SENT } from "@/constants/constants";
 import { useAlert } from "@/lib/alert-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface ContactWithStatus extends Contacts.Contact {
   friendshipStatus?: "none" | "pending" | "accepted";
+}
+
+// Simplified contact structure for storage
+interface StorableContact {
+  id: string;
+  name: string;
+  phoneNumber?: string;
+  imageUri?: string;
+  friendshipStatus: "none" | "pending" | "accepted";
 }
 
 interface ContactsProps {
@@ -29,24 +40,151 @@ interface ContactsProps {
   onFriendStatusChange?: () => void;
 }
 
+// Base storage key prefix
+const MANUAL_CONTACTS_STORAGE_PREFIX = "MANUAL_CONTACTS_";
+
 export default function ContactsList({
   userId,
   onFriendStatusChange,
 }: ContactsProps) {
   const [contacts, setContacts] = useState<ContactWithStatus[]>([]);
+  const [manuallySelectedContacts, setManuallySelectedContacts] = useState<
+    StorableContact[]
+  >([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const isMounted = useRef(true);
 
   const { showAlert } = useAlert();
+
+  // Define the storage key within the component where userId is in scope
+  const storageKey = `${MANUAL_CONTACTS_STORAGE_PREFIX}${userId}`;
+
+  // Convert complex contact to storable format
+  const contactToStorable = (contact: ContactWithStatus): StorableContact => {
+    // Handle different name formats
+    let name = "Unknown";
+    if (contact.name) {
+      name = contact.name;
+    } else if (contact.firstName || contact.lastName) {
+      name = `${contact.firstName || ""} ${contact.lastName || ""}`.trim();
+    }
+
+    return {
+      id: contact.id || String(Math.random()),
+      name: name,
+      phoneNumber: contact.phoneNumbers?.[0]?.number,
+      imageUri: contact.image?.uri,
+      friendshipStatus: contact.friendshipStatus || "none",
+    };
+  };
+
+  // Save manually selected contacts
+  const saveManualContacts = useCallback(
+    async (contacts: StorableContact[]) => {
+      try {
+        console.log(`Saving ${contacts.length} manual contacts to storage`);
+        await AsyncStorage.setItem(storageKey, JSON.stringify(contacts));
+      } catch (error) {
+        console.error("Error saving manual contacts to storage:", error);
+      }
+    },
+    [storageKey]
+  );
+
+  // Load manually selected contacts
+  const loadManualContacts = useCallback(async () => {
+    try {
+      const storedData = await AsyncStorage.getItem(storageKey);
+      if (storedData) {
+        const parsedContacts = JSON.parse(storedData) as StorableContact[];
+        console.log(
+          `Loaded ${parsedContacts.length} manual contacts from storage`
+        );
+        setManuallySelectedContacts(parsedContacts);
+        return parsedContacts;
+      }
+    } catch (error) {
+      console.error("Error loading manual contacts from storage:", error);
+    }
+    return [];
+  }, [storageKey]);
+
+  // Load all data on mount
+  useEffect(() => {
+    if (userId) {
+      const initialize = async () => {
+        const manualContacts = await loadManualContacts();
+        const { status } = await Contacts.getPermissionsAsync();
+        setPermissionStatus(status);
+
+        if (status === GRANTED) {
+          fetchContacts(manualContacts);
+        } else {
+          setLoading(false);
+        }
+      };
+
+      initialize();
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [userId, loadManualContacts]);
+
+  // Update storage when manually selected contacts change
+  useEffect(() => {
+    if (manuallySelectedContacts.length > 0) {
+      saveManualContacts(manuallySelectedContacts);
+    }
+  }, [manuallySelectedContacts, saveManualContacts]);
+
+  // Monitor app state changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (appState.match(/inactive|background/) && nextAppState === "active") {
+        console.log("App returned to foreground - checking permissions");
+        recheckPermissions();
+      }
+      setAppState(nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState]);
+
+  const recheckPermissions = async () => {
+    setTimeout(async () => {
+      if (!isMounted.current) return;
+
+      try {
+        const { status } = await Contacts.getPermissionsAsync();
+        console.log("Current permission status:", status);
+        setPermissionStatus(status);
+
+        if (status === GRANTED) {
+          setLoading(true);
+          // Re-load manual contacts to ensure we have the latest data
+          const manualContacts = await loadManualContacts();
+          fetchContacts(manualContacts);
+        }
+      } catch (error) {
+        console.error("Error checking permissions:", error);
+      }
+    }, 500);
+  };
 
   const requestContactsPermission = async () => {
     try {
       const { status } = await Contacts.requestPermissionsAsync();
-      console.log(status, "status");
+      console.log("Permission request result:", status);
       setPermissionStatus(status);
 
       if (status === GRANTED) {
-        fetchContacts();
+        fetchContacts(manuallySelectedContacts);
       } else {
         setLoading(false);
       }
@@ -57,7 +195,96 @@ export default function ContactsList({
     }
   };
 
-  const fetchContacts = async () => {
+  // Request additional contacts using the contact picker
+  const requestMoreContacts = async () => {
+    try {
+      setLoading(true);
+      const pickedContact = await Contacts.presentContactPickerAsync();
+
+      if (pickedContact) {
+        console.log("Selected contact ID:", pickedContact.id);
+
+        // Fetch complete contact information using the ID
+        const completeContact = await Contacts.getContactByIdAsync(
+          pickedContact?.id!
+        );
+
+        if (!completeContact) {
+          showAlert("error", "Failed to retrieve complete contact details");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Complete contact name:", completeContact.name);
+        const phoneNumber = completeContact?.phoneNumbers?.[0]?.number;
+
+        if (phoneNumber) {
+          try {
+            const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
+            let friendshipStatus = "none";
+
+            if (friend.success && friend.user) {
+              const status = await checkFriendshipStatus(
+                userId,
+                friend.user.$id
+              );
+              friendshipStatus = status?.status || "none";
+            }
+
+            const contactWithStatus = {
+              ...completeContact,
+              friendshipStatus,
+            } as ContactWithStatus;
+
+            // Create storable version with the complete name
+            const storableContact = contactToStorable(contactWithStatus);
+
+            // Check if contact already exists
+            const existingManual = manuallySelectedContacts.some(
+              (c) => c.id === storableContact.id
+            );
+            const existingInContacts = contacts.some(
+              (c) => c.id === storableContact.id
+            );
+
+            if (existingManual || existingInContacts) {
+              showAlert("info", "Contact already in your list");
+            } else {
+              // Add to display list
+              setContacts((prev) => [...prev, contactWithStatus]);
+
+              // Add to persistent storage list
+              setManuallySelectedContacts((prev) => [...prev, storableContact]);
+
+              // Save immediately to ensure persistence
+              const updatedManualContacts = [
+                ...manuallySelectedContacts,
+                storableContact,
+              ];
+              saveManualContacts(updatedManualContacts);
+
+              showAlert("success", "Added new contact");
+            }
+          } catch (error) {
+            console.error("Error processing contact:", error);
+            showAlert("error", "Failed to process selected contact");
+          }
+        } else {
+          showAlert("info", "Selected contact has no phone number");
+        }
+      } else {
+        console.log("No contact selected");
+      }
+    } catch (error) {
+      console.error("Error with contact picker:", error);
+      showAlert("error", "Failed to select additional contact");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch contacts and merge with manually selected contacts
+  const fetchContacts = async (manualContacts = manuallySelectedContacts) => {
     try {
       const { data } = await Contacts.getContactsAsync({
         fields: [
@@ -67,37 +294,79 @@ export default function ContactsList({
         ],
       });
 
-      if (data.length > 0) {
-        const contactsWithStatus = await Promise.all(
-          data.map(async (contact) => {
-            const phoneNumber = contact?.phoneNumbers?.[0]?.number;
-            if (phoneNumber) {
-              try {
-                const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
-                if (friend.success && friend.user) {
-                  const friendshipStatus = await checkFriendshipStatus(
-                    userId,
-                    friend.user.$id
-                  );
-                  return {
-                    ...contact,
-                    friendshipStatus: friendshipStatus?.status,
-                  };
-                }
-              } catch (error) {
-                console.error("Error checking friendship status:", error);
+      console.log(`Found ${data.length} system contacts`);
+      console.log(`Have ${manualContacts.length} manually selected contacts`);
+
+      // Process system contacts
+      const systemContactsWithStatus = await Promise.all(
+        data.map(async (contact) => {
+          const phoneNumber = contact?.phoneNumbers?.[0]?.number;
+          if (phoneNumber) {
+            try {
+              const friend = await getUserByPhoneNumber(phoneNumber.slice(3));
+              if (friend.success && friend.user) {
+                const friendshipStatus = await checkFriendshipStatus(
+                  userId,
+                  friend.user.$id
+                );
+                return {
+                  ...contact,
+                  friendshipStatus: friendshipStatus?.status,
+                };
               }
+            } catch (error) {
+              console.error("Error checking friendship status:", error);
             }
-            return { ...contact, friendshipStatus: "none" };
-          })
-        );
-        setContacts(contactsWithStatus);
+          }
+          return { ...contact, friendshipStatus: "none" };
+        })
+      );
+
+      // Convert manual contacts back to full contacts
+      const manualContactsAsFullContacts = manualContacts.map(
+        (storedContact) => {
+          // Create a minimal Contact object from the stored data
+          return {
+            id: storedContact.id,
+            name: storedContact.name,
+            phoneNumbers: storedContact.phoneNumber
+              ? [{ number: storedContact.phoneNumber }]
+              : [],
+            image: storedContact.imageUri
+              ? { uri: storedContact.imageUri }
+              : undefined,
+            imageAvailable: !!storedContact.imageUri,
+            friendshipStatus: storedContact.friendshipStatus,
+          } as ContactWithStatus;
+        }
+      );
+
+      // Build a set of system contact IDs for deduplication
+      const systemContactIds = new Set(
+        systemContactsWithStatus.map((c) => c.id)
+      );
+
+      // Filter out manual contacts that already exist in system contacts
+      const uniqueManualContacts = manualContactsAsFullContacts.filter(
+        (c) => !systemContactIds.has(c.id)
+      );
+
+      // Merge the contacts
+      const mergedContacts = [
+        ...systemContactsWithStatus,
+        ...uniqueManualContacts,
+      ];
+
+      if (isMounted.current) {
+        setContacts(mergedContacts);
+        setLoading(false);
       }
     } catch (error) {
       console.error("Error fetching contacts:", error);
-      showAlert("error", "Failed to load contacts");
-    } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        showAlert("error", "Failed to load contacts");
+        setLoading(false);
+      }
     }
   };
 
@@ -107,7 +376,9 @@ export default function ContactsList({
     setPermissionStatus(status);
 
     if (status === GRANTED) {
-      fetchContacts();
+      // Re-load manual contacts to ensure we have the latest data
+      const manualContacts = await loadManualContacts();
+      fetchContacts(manualContacts);
     } else {
       requestContactsPermission();
     }
@@ -118,12 +389,6 @@ export default function ContactsList({
       showAlert("error", "Unable to open settings");
     });
   };
-
-  useEffect(() => {
-    if (userId) {
-      loadContacts();
-    }
-  }, [userId]);
 
   const handleAddContact = async (contact: ContactWithStatus) => {
     const phoneNumber = contact?.phoneNumbers?.[0]?.number;
@@ -159,11 +424,25 @@ export default function ContactsList({
 
         if (response) {
           showAlert("success", "Friend request sent successfully");
+
+          // Update the contact in both lists
           setContacts((prevContacts) =>
             prevContacts.map((c) =>
               c.id === contact.id ? { ...c, friendshipStatus: "pending" } : c
             )
           );
+
+          // Also update in the manual contacts list if it exists there
+          setManuallySelectedContacts((prevContacts) => {
+            const updated = prevContacts.map((c) =>
+              c.id === contact.id
+                ? { ...c, friendshipStatus: "pending" as "pending" }
+                : c
+            );
+            // Save the updated list immediately
+            saveManualContacts(updated);
+            return updated;
+          });
 
           if (onFriendStatusChange) {
             onFriendStatusChange();
@@ -248,14 +527,65 @@ export default function ContactsList({
         </Text>
         <TouchableOpacity
           onPress={openSettings}
-          className="mt-4 px-5 py-3"
+          className="bg-primary-100/20 px-5 py-3 rounded-lg mt-6"
           activeOpacity={0.7}
         >
-          <Text className="text-black-100 font-rubik-medium">
+          <Text className="text-primary-100 font-rubik-medium">
             Open Settings
           </Text>
         </TouchableOpacity>
       </View>
+    );
+  };
+
+  // Render UI when contacts are loaded
+  const renderContactsList = () => {
+    return (
+      <>
+        {contacts.length === 0 ? (
+          <View className="flex-1 justify-center items-center">
+            <Feather name="users" size={48} color="#666876" />
+            <Text className="text-black-100 font-rubik mt-4 text-center px-6">
+              No contacts found.
+            </Text>
+            <TouchableOpacity
+              onPress={requestMoreContacts}
+              className="bg-primary-100/20 px-5 py-3 rounded-lg mt-6"
+              activeOpacity={0.7}
+            >
+              <Text className="text-primary-100 font-rubik-medium">
+                Select a Contact
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <FlatList
+              data={contacts}
+              keyExtractor={(item) =>
+                item.id?.toString() || Math.random().toString()
+              }
+              renderItem={renderContactItem}
+              contentContainerStyle={{ paddingBottom: 80 }}
+              showsVerticalScrollIndicator={false}
+            />
+
+            {/* Add Contact Button */}
+            <View className="absolute bottom-6 left-0 right-0 items-center">
+              <TouchableOpacity
+                onPress={requestMoreContacts}
+                className="bg-black-300/80 px-5 py-3 rounded-full flex-row items-center"
+                activeOpacity={0.7}
+              >
+                <Feather name="user-plus" size={18} color="#FDECAF" />
+                <Text className="text-white font-rubik-medium ml-2">
+                  Add Contact
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+      </>
     );
   };
 
@@ -283,23 +613,8 @@ export default function ContactsList({
         </View>
       ) : permissionStatus !== GRANTED ? (
         renderPermissionDeniedUI()
-      ) : contacts.length === 0 ? (
-        <View className="flex-1 justify-center items-center">
-          <Feather name="users" size={48} color="#666876" />
-          <Text className="text-black-100 font-rubik mt-4 text-center px-6">
-            No contacts found.
-          </Text>
-        </View>
       ) : (
-        <FlatList
-          data={contacts}
-          keyExtractor={(item) =>
-            item.id?.toString() || Math.random().toString()
-          }
-          renderItem={renderContactItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-          showsVerticalScrollIndicator={false}
-        />
+        renderContactsList()
       )}
     </View>
   );
